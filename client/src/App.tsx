@@ -1,5 +1,6 @@
-import logo from './assets/logo.png';
 import AnimeCard from './AnimeCard.tsx';
+import Header from "./Header.tsx";
+import Card from "./Card.tsx";
 
 enum AnimeSongType {
   opening = 'Opening',
@@ -10,7 +11,6 @@ enum AnimeSongType {
 export type AnimeSong = {
   anime: string;
   type: AnimeSongType;
-  position?: number;
   position?: number;
   title: string;
   artiste: string;
@@ -68,21 +68,13 @@ function App() {
   return (
     <div className="flex h-screen flex-col font-rocknroll">
       <header className="border-b-8 border-red-600 bg-zinc-700">
-        <nav className="mx-auto flex p-2 lg:mx-auto lg:max-w-7xl lg:px-5">
-          <div className="flex items-center text-2xl text-zinc-300 sm:text-5xl">
-            <img src={logo} alt="logo" className="mr-5 h-16 w-16 rounded-3xl" />
-            <span>Japanimation Quiz</span>
-          </div>
-        </nav>
+        <Header/>
       </header>
 
       <main className="mb-auto">
         <div className="flex flex-col gap-8 p-2 py-7 sm:mx-auto sm:max-w-7xl sm:p-5">
           <div className="flex flex-col justify-between gap-10 py-2 sm:flex-row">
-            <div className="relative flex flex-col gap-2 rounded border border-red-600 bg-zinc-50 p-4 pt-6 text-base text-zinc-800 shadow-md sm:w-1/2">
-              <span className="absolute -top-3 left-0.5 rounded bg-zinc-50 px-1 text-base text-red-600">
-                Quiz
-              </span>
+            <Card title="Quiz">
               <div className="flex flex-col justify-around gap-2 sm:h-auto">
                 <span>Joueur connecté : 0</span>
                 <div className="flex w-full flex-col items-center">
@@ -91,16 +83,13 @@ function App() {
                   </button>
                 </div>
               </div>
-            </div>
+            </Card>
 
-            <div className="relative flex flex-col gap-2 rounded border border-red-600 bg-zinc-50 p-4 pt-6 text-base text-zinc-800 shadow-md sm:w-1/2">
-              <span className="absolute -top-3 left-2 rounded bg-zinc-50 px-1 text-base text-red-600">
-                Résumé
-              </span>
+            <Card title="Résumé">
               <div className="flex flex-col justify-around gap-2 sm:h-auto">
                 Test
               </div>
-            </div>
+            </Card>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -110,6 +99,7 @@ function App() {
             <div className="flex flex-col flex-wrap justify-between gap-2 md:flex-row">
               {animeSongs.slice(0, 5).map((animeSong, index) => (
                 <AnimeCard
+                  key={index}
                   hiddenLg={index === 3}
                   hiddenXl={index > 3}
                   animeSong={animeSong}
