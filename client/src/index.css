@@ -3,6 +3,6 @@
 @tailwind utilities;
 
 @font-face {
-    font-family: "RocknRollOne";
-    src: url("../src/assets/RocknRollOne-Regular.ttf");
+  font-family: 'RocknRollOne';
+  src: url('../src/assets/RocknRollOne-Regular.ttf');
 }
