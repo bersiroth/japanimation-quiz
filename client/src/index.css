@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+    font-family: "RocknRollOne";
+    src: url("../src/assets/RocknRollOne-Regular.ttf");
+}
