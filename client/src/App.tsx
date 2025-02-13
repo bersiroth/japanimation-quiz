@@ -1,7 +1,7 @@
 import AnimeCard from './AnimeCard.tsx';
 import Header from "./Header.tsx";
 import Card from "./Card.tsx";
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 import useWebSocket from "react-use-websocket";
 
 enum AnimeSongType {
@@ -75,7 +75,7 @@ function App() {
       band: "HOUND DOG",
       anime: "Naruto",
       kind: "opening",
-      coverUrl: "assets/naruto/opening-1.jpg",
+      coverUrl: "static/naruto/opening-1.jpg",
     }],
     index: 1,
     state: "waiting",
@@ -104,22 +104,22 @@ function App() {
       </header>
 
       <main className="mb-auto">
-        <div className="flex flex-col flex-wrap  gap-8 p-2 py-7 sm:mx-auto sm:max-w-7xl sm:p-5">
+        <div className="flex flex-col flex-wrap gap-8 p-2 py-7 sm:mx-auto sm:max-w-7xl sm:p-5">
           <div className="flex flex-col justify-between gap-10 py-2 sm:flex-row">
             <Card title="Quiz">
               <span className="text-s">Etat : {game.state}</span>
               <span className="text-s">Joueur connecté : {game.players.length}</span>
               <span className="text-s">Musique {game.index} / {game.songsLength}</span>
               <span className="text-s">Dernière musique : </span>
-              <div className="flex flex-row gap-10 py-2">
-                <div className="h-36 w-36 max-md:h-28 max-md:w-28">
+              <div className="h-40 flex flex-row gap-2">
+                <div className="h-40 w-40 max-md:h-30 max-md:w-30">
                   <img
                     src={`http://127.0.0.1:8080/${game.songs[game.songs.length - 1].coverUrl}`}
                     alt="logo"
-                    className="h-full w-full rounded-l-md object-cover md:rounded-b-none md:rounded-t-md"
+                    className="h-full w-full rounded-l-md object-cover md:rounded-b-none md:rounded-t-md border"
                   />
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col w-2/3">
                   <span className="text-md h-14 pb-1 font-bold text-red-500">{game.songs[game.songs.length - 1].anime}</span>
                   <span className="text-s ">{game.songs[game.songs.length - 1].name}</span>
                   <span className="text-s">{game.songs[game.songs.length - 1].trackName}</span>
