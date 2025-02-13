@@ -12,8 +12,8 @@ client/dist
 client/dist-ssr
 client/*.local
 
-server/client
-server/japanimation-quiz
+backend/client
+backend/japanimation-quiz
 
 # Editor directories and files
 .vscode/*

@@ -72,55 +72,8 @@ func NewGame(gameBroadcast chan []byte, statsBroadcast chan []byte) *Game {
 	return game
 }
 
-type PlayerStats struct {
-	Player Player `json:"player"`
-	Score  int    `json:"score"`
-}
-type TopStats struct {
-	TopActivePlayers []PlayerStats `json:"topActivePlayers"`
-	TopPlayers       []PlayerStats `json:"topPlayers"`
-}
-
-type GameStats struct {
-	Players     []Player   `json:"players"`
-	Index       int        `json:"index"`
-	State       GameStatus `json:"state"`
-	Songs       []Song     `json:"songs"`
-	SongsLength int        `json:"songsLength"`
-}
-
-func newGameStats(g *Game) GameStats {
-	return GameStats{
-		g.Players,
-		g.Index,
-		g.State,
-		g.songs[:g.Index],
-		g.SongsLength,
-	}
-}
-
-type stats struct {
-	TopStats  TopStats  `json:"topStats"`
-	GameStats GameStats `json:"gameStats"`
-}
-
 func (g *Game) broadcastStats() {
-	var topStats TopStats
-	pwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	jsonData, err := os.ReadFile(pwd + "/game/stats.json")
-	if err != nil {
-		panic(err)
-	}
-	if err := json.Unmarshal(jsonData, &topStats); err != nil {
-		panic(err)
-	}
-	marshal, err := json.Marshal(stats{
-		topStats,
-		newGameStats(g),
-	})
+	marshal, err := json.Marshal(newStats(g))
 	if err != nil {
 		panic(err)
 	}
@@ -177,11 +130,7 @@ func (g *Game) restart() {
 
 func getRandomSongs(nb int) []Song {
 	var m []Song
-	pwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	jsonData, err := os.ReadFile(pwd + "/game/songs.json")
+	jsonData, err := os.ReadFile("./game/songs.json")
 	if err != nil {
 		panic(err)
 	}
