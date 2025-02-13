@@ -12,6 +12,7 @@ type PlayerStats struct {
 type TopStats struct {
 	TopActivePlayers []PlayerStats `json:"topActivePlayers"`
 	TopPlayers       []PlayerStats `json:"topPlayers"`
+	lastGame         GameStats     `json:"lastGame"`
 }
 
 type GameStats struct {
@@ -32,12 +33,13 @@ func newGameStats(g *Game) GameStats {
 	}
 }
 
-type stats struct {
+type Stats struct {
 	TopStats  TopStats  `json:"topStats"`
 	GameStats GameStats `json:"gameStats"`
+	LastGame  GameStats `json:"lastGame"`
 }
 
-func newStats(g *Game) stats {
+func NewStats(g *Game) Stats {
 	jsonData, err := os.ReadFile("./game/stats.json")
 	if err != nil {
 		panic(err)
@@ -46,8 +48,9 @@ func newStats(g *Game) stats {
 	if err := json.Unmarshal(jsonData, &topStats); err != nil {
 		panic(err)
 	}
-	return stats{
+	return Stats{
 		topStats,
 		newGameStats(g),
+		topStats.lastGame,
 	}
 }

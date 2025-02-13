@@ -73,7 +73,7 @@ func NewGame(gameBroadcast chan []byte, statsBroadcast chan []byte) *Game {
 }
 
 func (g *Game) broadcastStats() {
-	marshal, err := json.Marshal(newStats(g))
+	marshal, err := json.Marshal(NewStats(g))
 	if err != nil {
 		panic(err)
 	}

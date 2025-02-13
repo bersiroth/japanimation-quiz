@@ -81,19 +81,25 @@ function App() {
     state: "waiting",
     songsLength: 5,
   });
+  const [stats, setStats] = useState({
+    topActivePlayers: [],
+    topPlayers: [],
+  });
 
   const {lastMessage} = useWebSocket("ws://127.0.0.1:8080/ws/stats", {
     onOpen: () => console.log('stats opened'),
   });
   useWebSocket("ws://127.0.0.1:8080/ws/game", {
     onOpen: () => console.log('game opened'),
+    onError: (event) => console.error('game error', event),
   });
 
   useEffect(() => {
     if (lastMessage !== null) {
       const data = JSON.parse(lastMessage.data);
-      console.log(data);
+      // console.log(data);
       setGame(data.gameStats);
+      setStats(data.topStats);
     }
   }, [lastMessage]);
 
@@ -110,37 +116,42 @@ function App() {
               <span className="text-s">Etat : {game.state}</span>
               <span className="text-s">Joueur connecté : {game.players.length}</span>
               <span className="text-s">Musique {game.index} / {game.songsLength}</span>
-              <span className="text-s">Dernière musique : </span>
-              <div className="h-40 flex flex-row gap-2">
-                <div className="h-40 w-40 max-md:h-30 max-md:w-30">
-                  <img
-                    src={`http://127.0.0.1:8080/${game.songs[game.songs.length - 1].coverUrl}`}
-                    alt="logo"
-                    className="h-full w-full rounded-l-md object-cover md:rounded-b-none md:rounded-t-md border"
-                  />
-                </div>
-                <div className="flex flex-col w-2/3">
-                  <span className="text-md h-14 pb-1 font-bold text-red-500">{game.songs[game.songs.length - 1].anime}</span>
-                  <span className="text-s ">{game.songs[game.songs.length - 1].name}</span>
-                  <span className="text-s">{game.songs[game.songs.length - 1].trackName}</span>
-                  <span className="text-s">par {game.songs[game.songs.length - 1].band}</span>
-                </div>
-              </div>
-              <div className="flex w-full flex-col items-center">
+              <div className="flex w-full flex-col items-center mt-5">
                 <button className="rounded bg-red-600 p-2 text-zinc-200">
                   Rejoindre le quiz
                 </button>
               </div>
             </Card>
 
-            <Card title="Résumé">
-              Test
+            <Card title="Stats">
+              <div className="flex flex-row gap-2">
+                <div className="w-1/2">
+                  <div className="h-14">Joueur les plus actif</div>
+                  <div className="flex flex-col gap-2">
+                    {stats.topActivePlayers.map((activeStats, index) => (
+                      <div key={index} className="flex">
+                        <span>{activeStats.player.name} : {activeStats.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="w-1/2">
+                  <div className="h-14">Joueur les plus victorieux</div>
+                  <div className="flex flex-col gap-2">
+                    {stats.topPlayers.map((topStats, index) => (
+                      <div key={index} className="flex">
+                        <span>{topStats.player.name} : {topStats.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </Card>
           </div>
 
           <div className="flex flex-col gap-2">
             <span className="text-xl text-zinc-800">
-              Dernières musiques du quiz
+              Musiques du dernier quiz
             </span>
             <div className="flex flex-col flex-wrap justify-between gap-2 md:flex-row">
               {animeSongs.slice(0, 5).map((animeSong, index) => (
