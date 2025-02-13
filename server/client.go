@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -84,6 +85,7 @@ func (c *Client) writePump() {
 	defer func() {
 		ticker.Stop()
 		c.conn.Close()
+		fmt.Println("Client disconnected")
 	}()
 	for {
 		select {
@@ -102,11 +104,11 @@ func (c *Client) writePump() {
 			w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.send)
-			}
+			//n := len(c.send)
+			//for i := 0; i < n; i++ {
+			//	w.Write(newline)
+			//	w.Write(<-c.send)
+			//}
 
 			if err := w.Close(); err != nil {
 				return
@@ -122,6 +124,7 @@ func (c *Client) writePump() {
 
 // serveWs handles websocket requests from the peer.
 func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)

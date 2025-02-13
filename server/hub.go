@@ -4,7 +4,9 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
@@ -31,12 +33,13 @@ func newHub() *Hub {
 	}
 }
 
-func (h *Hub) run() {
+func (h *Hub) run(registerCallback func(h *Hub)) {
 	for {
 		select {
 		case client := <-h.register:
 			h.clients[client] = true
 			fmt.Println("Welcome to the chat room!")
+			registerCallback(h)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)

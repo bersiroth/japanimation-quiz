@@ -1,0 +1,18 @@
+{
+  "topActivePlayers": [
+    {
+      "player": {
+        "name": "John Doe"
+      },
+      "score": 23
+    }
+  ],
+  "topPlayers": [
+    {
+      "player": {
+        "name": "John Doe"
+      },
+      "score": 23
+    }
+  ]
+}
