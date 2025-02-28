@@ -14,6 +14,7 @@ client/*.local
 
 backend/client
 backend/japanimation-quiz
+backend/game/stats.json
 
 # Editor directories and files
 .vscode/*

@@ -121,6 +121,7 @@ func (g *Game) AddPlayer(name string, id string) {
 }
 
 func (g *Game) restart() {
+	SaveGameStats(g)
 	log.Println("Game restart")
 	g.songs = getRandomSongs(songsLength)
 	g.Song = g.songs[0]

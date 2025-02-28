@@ -12,7 +12,6 @@ type PlayerStats struct {
 type TopStats struct {
 	TopActivePlayers []PlayerStats `json:"topActivePlayers"`
 	TopPlayers       []PlayerStats `json:"topPlayers"`
-	lastGame         GameStats     `json:"lastGame"`
 }
 
 type GameStats struct {
@@ -39,18 +38,45 @@ type Stats struct {
 	LastGame  GameStats `json:"lastGame"`
 }
 
+const file = "./game/stats.json"
+
 func NewStats(g *Game) Stats {
-	jsonData, err := os.ReadFile("./game/stats.json")
+	jsonData, err := os.ReadFile(file)
+	if os.IsNotExist(err) {
+		stats := Stats{}
+		writeStats(stats)
+		stats.GameStats = newGameStats(g)
+		return stats
+	} else if err != nil {
+		panic(err)
+	}
+	stats := Stats{}
+	if err := json.Unmarshal(jsonData, &stats); err != nil {
+		panic(err)
+	}
+	stats.GameStats = newGameStats(g)
+	return stats
+}
+
+func SaveGameStats(g *Game) {
+	jsonData, err := os.ReadFile(file)
 	if err != nil {
 		panic(err)
 	}
-	var topStats TopStats
-	if err := json.Unmarshal(jsonData, &topStats); err != nil {
+	stats := Stats{}
+	if err := json.Unmarshal(jsonData, &stats); err != nil {
 		panic(err)
 	}
-	return Stats{
-		topStats,
-		newGameStats(g),
-		topStats.lastGame,
+	stats.LastGame = newGameStats(g)
+	writeStats(stats)
+}
+
+func writeStats(stats Stats) {
+	updatedJsonData, err := json.Marshal(stats)
+	if err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(file, updatedJsonData, 0644); err != nil {
+		panic(err)
 	}
 }
