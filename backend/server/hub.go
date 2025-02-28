@@ -33,17 +33,18 @@ func newHub() *Hub {
 	}
 }
 
-func (h *Hub) run(registerCallback func(h *Hub)) {
+func (h *Hub) run(registerCallback func(h *Hub, client *Client), unregisterCallback func(h *Hub, client *Client)) {
 	for {
 		select {
 		case client := <-h.register:
 			h.clients[client] = true
 			fmt.Println("Welcome to the chat room!")
-			registerCallback(h)
+			registerCallback(h, client)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)
+				unregisterCallback(h, client)
 			}
 		case message := <-h.broadcast:
 			for client := range h.clients {

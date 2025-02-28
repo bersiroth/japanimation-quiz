@@ -7,6 +7,7 @@ package server
 import (
 	"bytes"
 	"fmt"
+	uuid "github.com/satori/go.uuid"
 	"log"
 	"net/http"
 	"time"
@@ -40,6 +41,7 @@ var upgrader = websocket.Upgrader{
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
+	Id  uuid.UUID
 	hub *Hub
 
 	// The websocket connection.
@@ -130,7 +132,7 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{Id: uuid.NewV4(), hub: hub, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in

@@ -2,6 +2,7 @@ package game
 
 import (
 	"encoding/json"
+	uuid "github.com/satori/go.uuid"
 	"log"
 	"math/rand"
 	"os"
@@ -9,15 +10,8 @@ import (
 )
 
 type Player struct {
-	Name string `json:"name"`
-	Id   string `json:"-"`
-}
-
-func NewPlayer(name string, id string) *Player {
-	return &Player{
-		Name: name,
-		Id:   id,
-	}
+	Name string    `json:"name"`
+	Id   uuid.UUID `json:"-"`
 }
 
 type SongKind string
@@ -82,6 +76,7 @@ func (g *Game) broadcastStats() {
 
 func (g *Game) start() {
 	g.State = Playing
+	log.Println("Game started")
 	for {
 		log.Println("Game loop")
 		go g.broadcastStats()
@@ -107,13 +102,12 @@ func (g *Game) nextSong() {
 	g.Index++
 }
 
-func (g *Game) AddPlayer(name string, id string) {
+func (g *Game) AddPlayer(name string, id uuid.UUID) {
 	g.Players = append(g.Players, Player{
 		Name: name,
 		Id:   id,
 	})
 	if g.State == Waiting {
-		log.Println("Game started")
 		go g.start()
 		return
 	}
@@ -126,7 +120,20 @@ func (g *Game) restart() {
 	g.songs = getRandomSongs(songsLength)
 	g.Song = g.songs[0]
 	g.Index = 1
+	if len(g.Players) == 0 {
+		g.State = Waiting
+		return
+	}
 	g.start()
+}
+
+func (g *Game) RemovePlayer(id uuid.UUID) {
+	for i, player := range g.Players {
+		if player.Id == id {
+			g.Players = append(g.Players[:i], g.Players[i+1:]...)
+			break
+		}
+	}
 }
 
 func getRandomSongs(nb int) []Song {
