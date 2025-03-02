@@ -7,7 +7,8 @@
     "kind": "opening",
     "url": "https://www.youtube.com/watch?v=4t__wczfpRI",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-1.jpg"
+    "coverUrl": "static/naruto/opening-1.jpg",
+    "audioUrl": "static/naruto/opening-1.mp3"
   },
   {
     "anime": "Naruto",
@@ -17,7 +18,8 @@
     "kind": "opening",
     "url": "https://www.youtube.com/watch?v=SRn99oN1p_c",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-2.jpg"
+    "coverUrl": "static/naruto/opening-2.jpg",
+    "audioUrl": "static/naruto/opening-2.mp3"
   },
   {
     "anime": "Naruto",
@@ -27,7 +29,8 @@
     "kind": "opening",
     "url": "https://www.youtube.com/watch?v=XwJEFzsqNoY",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-3.png"
+    "coverUrl": "static/naruto/opening-3.png",
+    "audioUrl": "static/naruto/opening-3.mp3"
   },
   {
     "anime": "Naruto",
@@ -37,7 +40,8 @@
     "kind": "opening",
     "url": "https://www.youtube.com/watch?v=xjBTNbEXbAA",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-1.jpg"
+    "coverUrl": "static/naruto/opening-1.jpg",
+    "audioUrl": "static/naruto/opening-4.mp3"
   },
   {
     "anime": "Naruto",
@@ -47,7 +51,8 @@
     "kind": "opening",
     "url": "https://www.youtube.com/watch?v=lilv4MvBY6E",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-2.jpg"
+    "coverUrl": "static/naruto/opening-2.jpg",
+    "audioUrl": "static/naruto/opening-5.mp3"
   },
   {
     "anime": "Naruto",
@@ -57,7 +62,8 @@
     "kind": "opening",
     "url": "https://www.youtube.com/watch?v=pWyoHrMzAZQ",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-3.png"
+    "coverUrl": "static/naruto/opening-3.png",
+    "audioUrl": "static/naruto/opening-6.mp3"
   },
   {
     "anime": "Naruto",
@@ -67,7 +73,8 @@
     "kind": "opening",
     "url": "https://www.youtube.com/watch?v=pY15k20Hqq0",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-1.jpg"
+    "coverUrl": "static/naruto/opening-1.jpg",
+    "audioUrl": "static/naruto/opening-1.mp3"
   },
   {
     "anime": "Naruto",
@@ -77,7 +84,8 @@
     "kind": "opening",
     "url": "https://www.youtube.com/watch?v=yB2g22359Fg",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-2.jpg"
+    "coverUrl": "static/naruto/opening-2.jpg",
+    "audioUrl": "static/naruto/opening-2.mp3"
   },
   {
     "anime": "Naruto",
@@ -87,7 +95,8 @@
     "kind": "opening",
     "url": "https://www.youtube.com/watch?v=-m8kR0FQ7Wk",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-3.png"
+    "coverUrl": "static/naruto/opening-3.png",
+    "audioUrl": "static/naruto/opening-3.mp3"
   },
   {
     "anime": "Naruto",
@@ -97,7 +106,8 @@
     "kind": "ending",
     "url": "https://www.youtube.com/watch?v=Oyhpwyrq1N0",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-1.jpg"
+    "coverUrl": "static/naruto/opening-1.jpg",
+    "audioUrl": "static/naruto/opening-4.mp3"
   },
   {
     "anime": "Naruto Shippuden",
@@ -107,7 +117,8 @@
     "kind": "opening",
     "url": "?",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-2.jpg"
+    "coverUrl": "static/naruto/opening-2.jpg",
+    "audioUrl": "static/naruto/opening-5.mp3"
   },
   {
     "anime": "Frieren: Beyond Journey's End",
@@ -117,7 +128,8 @@
     "kind": "opening",
     "url": "https://www.youtube.com/watch?v=QoGM9hCxr4k",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-3.png"
+    "coverUrl": "static/naruto/opening-3.png",
+    "audioUrl": "static/naruto/opening-6.mp3"
   },
   {
     "anime": "Frieren: Beyond Journey's End",
@@ -127,7 +139,8 @@
     "kind": "ending",
     "url": "https://www.youtube.com/watch?v=7pmd0kt3FOs",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-1.jpg"
+    "coverUrl": "static/naruto/opening-1.jpg",
+    "audioUrl": "static/naruto/opening-1.mp3"
   },
   {
     "anime": "Frieren: Beyond Journey's End",
@@ -137,7 +150,8 @@
     "kind": "opening",
     "url": "https://www.youtube.com/watch?v=iqsnJJK8GA4",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-2.jpg"
+    "coverUrl": "static/naruto/opening-2.jpg",
+    "audioUrl": "static/naruto/opening-2.mp3"
   },
   {
     "anime": "Frieren: Beyond Journey's End",
@@ -147,7 +161,8 @@
     "kind": "ending",
     "url": "https://www.youtube.com/watch?v=HAOQDCF0jQE",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-3.png"
+    "coverUrl": "static/naruto/opening-3.png",
+    "audioUrl": "static/naruto/opening-3.mp3"
   },
   {
     "anime": "Frieren: Beyond Journey's End",
@@ -157,6 +172,7 @@
     "kind": "insert",
     "url": "https://www.youtube.com/watch?v=5Ufj38W6-o4",
     "duration": "0001-01-01T00:00:00Z",
-    "coverUrl": "static/naruto/opening-1.jpg"
+    "coverUrl": "static/naruto/opening-1.jpg",
+    "audioUrl": "static/naruto/opening-4.mp3"
   }
 ]

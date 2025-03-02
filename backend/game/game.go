@@ -10,8 +10,9 @@ import (
 )
 
 type Player struct {
-	Name string    `json:"name"`
-	Id   uuid.UUID `json:"-"`
+	Name  string    `json:"name"`
+	Id    uuid.UUID `json:"-"`
+	Score int       `json:"score"`
 }
 
 type SongKind string
@@ -29,6 +30,7 @@ type Song struct {
 	TrackName string   `json:"trackName"`
 	Kind      SongKind `json:"kind"`
 	CoverUrl  string   `json:"coverUrl"`
+	AudioUrl  string   `json:"audioUrl"`
 }
 
 type GameStatus string
@@ -66,7 +68,7 @@ func NewGame(gameBroadcast chan []byte, statsBroadcast chan []byte) *Game {
 	return game
 }
 
-func (g *Game) broadcastStats() {
+func (g *Game) BroadcastStats() {
 	marshal, err := json.Marshal(NewStats(g))
 	if err != nil {
 		panic(err)
@@ -74,14 +76,26 @@ func (g *Game) broadcastStats() {
 	g.statsBroadcast <- marshal
 }
 
+type gameQuestion struct {
+	Players  []Player `json:"players"`
+	Songs    []Song   `json:"songs"`
+	Type     string   `json:"type"`
+	AudioUrl string   `json:"audioUrl"`
+}
+
 func (g *Game) start() {
 	g.State = Playing
 	log.Println("Game started")
 	for {
 		log.Println("Game loop")
-		go g.broadcastStats()
+		go g.BroadcastStats()
 
-		marshal, err := json.Marshal(g)
+		marshal, err := json.Marshal(gameQuestion{
+			Players:  g.Players,
+			Songs:    g.songs[:g.Index-1],
+			Type:     "question",
+			AudioUrl: g.Song.AudioUrl,
+		})
 		if err != nil {
 			panic(err)
 		}
@@ -89,11 +103,11 @@ func (g *Game) start() {
 		if g.Index == songsLength {
 			break
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(10 * time.Second)
 		g.nextSong()
 	}
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	g.restart()
 }
 
@@ -111,7 +125,7 @@ func (g *Game) AddPlayer(name string, id uuid.UUID) {
 		go g.start()
 		return
 	}
-	go g.broadcastStats()
+	go g.BroadcastStats()
 }
 
 func (g *Game) restart() {
@@ -122,6 +136,7 @@ func (g *Game) restart() {
 	g.Index = 1
 	if len(g.Players) == 0 {
 		g.State = Waiting
+		go g.BroadcastStats()
 		return
 	}
 	g.start()

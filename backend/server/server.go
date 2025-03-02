@@ -12,13 +12,15 @@ func RunWsSocketServer() {
 	statsHub := newHub()
 	game := game.NewGame(gameHub.broadcast, statsHub.broadcast)
 
-	go statsHub.run(func(h *Hub, c *Client) {}, func(h *Hub, c *Client) {})
+	go statsHub.run(func(h *Hub, c *Client) {
+		go game.BroadcastStats()
+	}, func(h *Hub, c *Client) {})
 	http.HandleFunc("/ws/stats", func(w http.ResponseWriter, r *http.Request) {
 		ServeWs(statsHub, w, r)
 	})
 
 	go gameHub.run(func(h *Hub, c *Client) {
-		game.AddPlayer("Player", c.Id)
+		game.AddPlayer("Player "+c.Id.String(), c.Id)
 		log.Println("Game hub registered callback")
 	}, func(h *Hub, c *Client) {
 		game.RemovePlayer(c.Id)
