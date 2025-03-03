@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -76,9 +77,10 @@ func (g *Game) BroadcastStats() {
 	g.statsBroadcast <- marshal
 }
 
-type gameQuestion struct {
+type gameStep struct {
 	Players  []Player `json:"players"`
 	Songs    []Song   `json:"songs"`
+	Song     Song     `json:"song"`
 	Type     string   `json:"type"`
 	AudioUrl string   `json:"audioUrl"`
 }
@@ -87,10 +89,11 @@ func (g *Game) start() {
 	g.State = Playing
 	log.Println("Game started")
 	for {
-		log.Println("Game loop")
+		log.Println("---------- Loop " + strconv.Itoa(g.Index))
 		go g.BroadcastStats()
 
-		marshal, err := json.Marshal(gameQuestion{
+		log.Println("Step question")
+		marshal, err := json.Marshal(gameStep{
 			Players:  g.Players,
 			Songs:    g.songs[:g.Index-1],
 			Type:     "question",
@@ -100,10 +103,25 @@ func (g *Game) start() {
 			panic(err)
 		}
 		g.gameBroadcast <- marshal
+		time.Sleep(10 * time.Second)
+
+		log.Println("Step answer")
+		marshal, err = json.Marshal(gameStep{
+			Players:  g.Players,
+			Song:     g.songs[g.Index-1],
+			Songs:    g.songs[:g.Index],
+			Type:     "answer",
+			AudioUrl: g.Song.AudioUrl,
+		})
+		if err != nil {
+			panic(err)
+		}
+		g.gameBroadcast <- marshal
+		time.Sleep(10 * time.Second)
+
 		if g.Index == songsLength {
 			break
 		}
-		time.Sleep(10 * time.Second)
 		g.nextSong()
 	}
 

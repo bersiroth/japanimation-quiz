@@ -1,4 +1,4 @@
-import { AnimeSong } from './home.tsx';
+import {AnimeSong} from "../pages/HomePage.tsx";
 
 function AnimeCard({
   animeSong,

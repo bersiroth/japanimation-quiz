@@ -57,7 +57,7 @@ function HomePage() {
     topPlayers: [],
   });
 
-  const { lastMessage } = useWebSocket('ws://127.0.0.1:8080/ws/stats', {
+  const { lastMessage } = useWebSocket('wss://7264-2a09-bac0-1000-80b-00-3da-4c.ngrok-free.app/ws/stats', {
     onOpen: () => console.log('stats opened'),
     onError: (event) => console.error('stats error', event),
   });
@@ -132,8 +132,6 @@ function HomePage() {
             .map((animeSong, index) => (
               <AnimeCard
                 key={index}
-                hiddenLg={index === 3}
-                hiddenXl={index > 3}
                 animeSong={animeSong}
               />
             ))}
