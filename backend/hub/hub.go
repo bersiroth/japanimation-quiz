@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package server
+package hub
 
 import (
 	"fmt"
@@ -15,7 +15,10 @@ type Hub struct {
 	clients map[*Client]bool
 
 	// Inbound messages from the clients.
-	broadcast chan []byte
+	Broadcast chan []byte
+
+	// Read messages from the clients.
+	read chan *ClientMessage
 
 	// Register requests from the clients.
 	register chan *Client
@@ -24,16 +27,17 @@ type Hub struct {
 	unregister chan *Client
 }
 
-func newHub() *Hub {
+func NewHub() *Hub {
 	return &Hub{
-		broadcast:  make(chan []byte),
+		Broadcast:  make(chan []byte),
+		read:       make(chan *ClientMessage),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
 	}
 }
 
-func (h *Hub) run(registerCallback func(h *Hub, client *Client), unregisterCallback func(h *Hub, client *Client)) {
+func (h *Hub) Run(registerCallback func(h *Hub, client *Client), unregisterCallback func(h *Hub, client *Client), readCallback func(message *ClientMessage)) {
 	for {
 		select {
 		case client := <-h.register:
@@ -43,18 +47,21 @@ func (h *Hub) run(registerCallback func(h *Hub, client *Client), unregisterCallb
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
-				close(client.send)
+				close(client.Send)
 				unregisterCallback(h, client)
 			}
-		case message := <-h.broadcast:
+		case message := <-h.Broadcast:
 			for client := range h.clients {
 				select {
-				case client.send <- message:
+				case client.Send <- message:
 				default:
-					close(client.send)
+					close(client.Send)
 					delete(h.clients, client)
 				}
 			}
+		case message := <-h.read:
+			readCallback(message)
 		}
+
 	}
 }

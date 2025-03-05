@@ -2,17 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package server
+package hub
 
 import (
 	"bytes"
 	"fmt"
+	"github.com/gorilla/websocket"
 	uuid "github.com/satori/go.uuid"
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 const (
@@ -48,7 +47,12 @@ type Client struct {
 	conn *websocket.Conn
 
 	// Buffered channel of outbound messages.
-	send chan []byte
+	Send chan []byte
+}
+
+type ClientMessage struct {
+	Client  *Client
+	Message []byte
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -73,7 +77,11 @@ func (c *Client) readPump() {
 			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.hub.broadcast <- message
+		log.Println("Message received: ", string(message))
+		c.hub.read <- &ClientMessage{
+			Client:  c,
+			Message: message,
+		}
 	}
 }
 
@@ -91,7 +99,7 @@ func (c *Client) writePump() {
 	}()
 	for {
 		select {
-		case message, ok := <-c.send:
+		case message, ok := <-c.Send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
@@ -132,7 +140,7 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	client := &Client{Id: uuid.NewV4(), hub: hub, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{Id: uuid.NewV4(), hub: hub, conn: conn, Send: make(chan []byte, 256)}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
