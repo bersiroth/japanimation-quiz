@@ -57,7 +57,7 @@ function HomePage() {
     topPlayers: [],
   });
 
-  const { lastMessage } = useWebSocket('wss://7264-2a09-bac0-1000-80b-00-3da-4c.ngrok-free.app/ws/stats', {
+  const { lastMessage } = useWebSocket('ws://localhost:8080/ws/stats', {
     onOpen: () => console.log('stats opened'),
     onError: (event) => console.error('stats error', event),
   });
@@ -126,12 +126,14 @@ function HomePage() {
 
       <div className="flex flex-col gap-2">
         <span className="text-xl text-zinc-800">Musiques du dernier quiz</span>
-        <div className="flex flex-col flex-wrap justify-between gap-2 md:flex-row">
+        <div className="flex flex-row flex-wrap justify-between gap-2 md:flex-row">
           {lastGame.songs
             ?.slice(0, 5)
             .map((animeSong, index) => (
               <AnimeCard
                 key={index}
+                hiddenLg={index === 3}
+                hiddenXl={index > 3}
                 animeSong={animeSong}
               />
             ))}

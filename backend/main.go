@@ -39,7 +39,7 @@ func initHub() {
 	})
 
 	go gameHub.Run(func(h *hub.Hub, c *hub.Client) {
-		game.AddPlayer("Player "+c.Id.String(), c.Id)
+		game.AddPlayer("Player "+c.Id.String(), c)
 		//log.Println("Game hub registered callback")
 	}, func(h *hub.Hub, c *hub.Client) {
 		game.RemovePlayer(c.Id)
