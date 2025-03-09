@@ -31,6 +31,15 @@ function GamePage() {
       console.log('game step', data.type);
       console.log('state', state);
       if (data.type === 'question') {
+        setHasValidation(false);
+        setAnimeAnswerGood(false);
+        setKindAnswerGood(false);
+        setSongAnswerGood(false);
+        setBandAnswerGood(false);
+        setAnimeAnswer('');
+        setSongAnswer('');
+        setKindAnswer('other');
+        setBandAnswer('');
         setGameStep(data);
         audio.current.pause();
         audio.current.currentTime = 30 - data.remainingTime;
@@ -56,6 +65,12 @@ function GamePage() {
         setInitialRemainingTime(0);
         setKey((prevState) => prevState + 1);
         setPlay(true);
+      } else if (data.type === 'answerValidation') {
+        if (!animeAnswerGood) setAnimeAnswerGood(data.animeResult);
+        if (!kindAnswerGood) setKindAnswerGood(data.kindResult);
+        if (!songAnswerGood) setSongAnswerGood(data.songResult);
+        if (!bandAnswerGood) setBandAnswerGood(data.bandResult);
+        setHasValidation(true);
       }
     }
   }, [lastMessage]);
@@ -63,18 +78,29 @@ function GamePage() {
   const audio = useRef(new Audio());
 
   const [animeAnswer, setAnimeAnswer] = useState('');
-  const [kindAnswer, setKindAnswer] = useState('opening');
+  const [kindAnswer, setKindAnswer] = useState('other');
   const [songAnswer, setSongAnswer] = useState('');
   const [bandAnswer, setBandAnswer] = useState('');
+  const [animeAnswerGood, setAnimeAnswerGood] = useState(false);
+  const [kindAnswerGood, setKindAnswerGood] = useState(false);
+  const [songAnswerGood, setSongAnswerGood] = useState(false);
+  const [bandAnswerGood, setBandAnswerGood] = useState(false);
+  const [hasValidation, setHasValidation] = useState(false);
+  const [canAnswer, setCanAnswer] = useState(true);
   function sendAnswer() {
+    if (!canAnswer) {
+      return;
+    }
     const answer = {
       type: 'answer',
-      anime: animeAnswer,
-      kind: kindAnswer,
-      song: songAnswer,
-      band: bandAnswer,
+      anime: hasValidation && animeAnswerGood ? '' : animeAnswer,
+      kind: hasValidation && kindAnswerGood ? 'other' : kindAnswer,
+      song: hasValidation && songAnswerGood ? '' : songAnswer,
+      band: hasValidation && bandAnswerGood ? '' : bandAnswer,
     };
+    setCanAnswer(false);
     sendJsonMessage(answer);
+    setTimeout(() => setCanAnswer(true), 1000);
   }
 
   const [key, setKey] = useState(0);
@@ -131,13 +157,16 @@ function GamePage() {
           {state === 'Playing' && (
             <>
               <div className="flex flex-row gap-4 pb-3">
-                <label htmlFor="anime" className="w-28 p-1 text-right">
+                <label
+                  htmlFor="anime"
+                  className={`${hasValidation ? (animeAnswerGood ? 'text-green-500' : 'text-red-500') : 'text-inherit'} w-28 p-1 text-right`}
+                >
                   Anime
                 </label>
                 <input
                   type="text"
                   id="anime"
-                  disabled={gameStep.type !== 'question'}
+                  disabled={gameStep.type !== 'question' || hasValidation && animeAnswerGood}
                   value={animeAnswer}
                   onChange={(e) => setAnimeAnswer(e.target.value)}
                   onKeyDown={(e) => {
@@ -145,31 +174,36 @@ function GamePage() {
                       sendAnswer();
                     }
                   }}
-                  className="w-2/3 rounded-md border border-slate-200 p-1 shadow-sm hover:border-slate-300 focus:border-slate-400 focus:shadow focus:outline-none"
+                  className={`${hasValidation ? (animeAnswerGood ? 'border-green-500 text-green-500 hover:border-green-600 focus:border-green-700' : 'border-red-500 text-red-500 hover:border-red-600 focus:border-red-700') : 'border-slate-200 hover:border-slate-300 focus:border-slate-400'} w-2/3 rounded-md border p-1 shadow-sm focus:shadow focus:outline-none`}
                 />
               </div>
               <div className="flex flex-row gap-4 pb-3">
-                <label htmlFor="kind" className="w-28 p-1 text-right">
+                <label
+                  htmlFor="kind"
+                  className={`${hasValidation ? (kindAnswerGood ? 'text-green-500' : 'text-red-500') : 'text-inherit'} w-28 p-1 text-right`}
+                >
                   Kind
                 </label>
                 <select
                   value={kindAnswer}
-                  disabled={gameStep.type !== 'question'}
+                  disabled={gameStep.type !== 'question' || hasValidation && kindAnswerGood}
                   onChange={(e) => setKindAnswer(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       sendAnswer();
                     }
                   }}
-                  className="w-2/3 rounded-md border border-slate-200 p-1 shadow-sm hover:border-slate-300 focus:border-slate-400 focus:shadow focus:outline-none"
-                >
+                  className={`${hasValidation ? (kindAnswerGood ? 'border-green-500 text-green-500 hover:border-green-600 focus:border-green-700' : 'border-red-500 text-red-500 hover:border-red-600 focus:border-red-700') : 'border-slate-200 hover:border-slate-300 focus:border-slate-400'} w-2/3 rounded-md border p-1 shadow-sm focus:shadow focus:outline-none`}                >
                   <option value="opening">Opening</option>
                   <option value="ending">Ending</option>
                   <option value="insert">Insert</option>
                 </select>
               </div>
               <div className="flex flex-row gap-4 pb-3">
-                <label htmlFor="song" className="w-28 p-1 text-right">
+                <label
+                  htmlFor="song"
+                  className={`${hasValidation ? (songAnswerGood ? 'text-green-500' : 'text-red-500') : 'text-inherit'} w-28 p-1 text-right`}
+                >
                   Song name
                 </label>
                 <input
@@ -183,11 +217,13 @@ function GamePage() {
                       sendAnswer();
                     }
                   }}
-                  className="w-2/3 rounded-md border border-slate-200 p-1 shadow-sm hover:border-slate-300 focus:border-slate-400 focus:shadow focus:outline-none"
-                />
+                  className={`${hasValidation ? (songAnswerGood ? 'border-green-500 text-green-500 hover:border-green-600 focus:border-green-700' : 'border-red-500 text-red-500 hover:border-red-600 focus:border-red-700') : 'border-slate-200 hover:border-slate-300 focus:border-slate-400'} w-2/3 rounded-md border p-1 shadow-sm focus:shadow focus:outline-none`}                />
               </div>
               <div className="flex flex-row gap-4 pb-3">
-                <label htmlFor="band" className="w-28 p-1 text-right">
+                <label
+                  htmlFor="band"
+                  className={`${hasValidation ? (bandAnswerGood ? 'text-green-500' : 'text-red-500') : 'text-inherit'} w-28 p-1 text-right`}
+                >
                   Band
                 </label>
                 <input
@@ -201,13 +237,12 @@ function GamePage() {
                       sendAnswer();
                     }
                   }}
-                  className="w-2/3 rounded-md border border-slate-200 p-1 shadow-sm hover:border-slate-300 focus:border-slate-400 focus:shadow focus:outline-none"
-                />
+                  className={`${hasValidation ? (bandAnswerGood ? 'border-green-500 text-green-500 hover:border-green-600 focus:border-green-700' : 'border-red-500 text-red-500 hover:border-red-600 focus:border-red-700') : 'border-slate-200 hover:border-slate-300 focus:border-slate-400'} w-2/3 rounded-md border p-1 shadow-sm focus:shadow focus:outline-none`}                />
               </div>
               <button
-                className="ml-32 w-20 rounded bg-red-600 p-2 text-zinc-200"
+                className="disabled:opacity-50 ml-32 w-20 rounded bg-red-600 p-2 text-zinc-200"
                 onClick={sendAnswer}
-                disabled={gameStep.type !== 'question'}
+                disabled={gameStep.type !== 'question' || !canAnswer}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     sendAnswer();

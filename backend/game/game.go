@@ -23,6 +23,7 @@ const (
 	SongKindOpening SongKind = "opening"
 	SongKindEnding  SongKind = "ending"
 	SongKindInsert  SongKind = "insert"
+	SongKindOther   SongKind = "other"
 )
 
 type Song struct {
@@ -235,6 +236,7 @@ type serverAnswer struct {
 func (g *Game) HandleClientMessage(client *hub.Client, message []byte) {
 	var a clientAnswer
 	var s serverAnswer
+	s.Type = "answerValidation"
 	if err := json.Unmarshal(message, &a); err != nil {
 		panic(err)
 	}

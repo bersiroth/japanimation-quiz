@@ -126,7 +126,7 @@ function HomePage() {
 
       <div className="flex flex-col gap-2">
         <span className="text-xl text-zinc-800">Musiques du dernier quiz</span>
-        <div className="flex flex-row flex-wrap justify-between gap-2 md:flex-row">
+        <div className="flex flex-col flex-wrap justify-between gap-2 md:flex-row">
           {lastGame.songs
             ?.slice(0, 5)
             .map((animeSong, index) => (
