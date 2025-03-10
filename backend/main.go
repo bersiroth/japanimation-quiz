@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"japanimation-quiz/game"
 	"japanimation-quiz/hub"
 	"log"
@@ -39,13 +40,13 @@ func initHub() {
 	})
 
 	go gameHub.Run(func(h *hub.Hub, c *hub.Client) {
-		game.AddPlayer("Player "+c.Id.String(), c)
-		//log.Println("Game hub registered callback")
+		id := c.Id.String()
+		game.AddPlayer("Player "+id, c)
+		log.Println(fmt.Sprintf(`New player %s`, id))
+		c.Send <- []byte(fmt.Sprintf(`{"type":"player", "id":"%s"}`, id))
 	}, func(h *hub.Hub, c *hub.Client) {
 		game.RemovePlayer(c.Id)
-		//log.Println("Game hub unregister callback")
 	}, func(message *hub.ClientMessage) {
-		//log.Println("Game hub read callback")
 		game.HandleClientMessage(message.Client, message.Message)
 	})
 	http.HandleFunc("/ws/game", func(w http.ResponseWriter, r *http.Request) {

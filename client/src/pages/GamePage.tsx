@@ -27,38 +27,39 @@ function GamePage() {
   useEffect(() => {
     if (lastMessage !== null) {
       const data = JSON.parse(lastMessage.data);
-      console.log('game data', data);
-      console.log('game step', data.type);
-      console.log('state', state);
       if (data.type === 'question') {
-        setHasValidation(false);
-        setAnimeAnswerGood(false);
-        setKindAnswerGood(false);
-        setSongAnswerGood(false);
-        setBandAnswerGood(false);
-        setAnimeAnswer('');
-        setSongAnswer('');
-        setKindAnswer('other');
-        setBandAnswer('');
-        setGameStep(data);
-        audio.current.pause();
-        audio.current.currentTime = 30 - data.remainingTime;
-        console.log('setsrc', 'http://localhost:8080/' + data.audioUrl);
-        audio.current.src = 'http://localhost:8080/' + data.audioUrl;
-        setDuration(0);
-        audio.current.onloadedmetadata = () => {
-          setDuration(parseInt(audio.current.duration));
-          console.log('duration', parseInt(audio.current.duration));
-        };
-        audio.current.ontimeupdate = () => {
-          setCurrent(parseInt(audio.current.currentTime));
-        };
+        if (gameStep.type === 'question') {
+          setGameStep(data);
+        } else {
+          setHasValidation(false);
+          setAnimeAnswerGood(false);
+          setKindAnswerGood(false);
+          setSongAnswerGood(false);
+          setBandAnswerGood(false);
+          setAnimeAnswer('');
+          setSongAnswer('');
+          setKindAnswer('opening');
+          setBandAnswer('');
+          setGameStep(data);
+          audio.current.pause();
+          audio.current.currentTime = 30 - data.remainingTime;
+          console.log('setsrc', 'http://localhost:8080/' + data.audioUrl);
+          audio.current.src = 'http://localhost:8080/' + data.audioUrl;
+          setDuration(0);
+          audio.current.onloadedmetadata = () => {
+            setDuration(parseInt(audio.current.duration));
+            console.log('duration', parseInt(audio.current.duration));
+          };
+          audio.current.ontimeupdate = () => {
+            setCurrent(parseInt(audio.current.currentTime));
+          };
 
-        audio.current.muted = state !== 'Playing';
-        audio.current.play();
-        setInitialRemainingTime(data.remainingTime);
-        setKey((prevState) => prevState + 1);
-        setPlay(true);
+          audio.current.muted = state !== 'Playing';
+          audio.current.play();
+          setInitialRemainingTime(data.remainingTime);
+          setKey((prevState) => prevState + 1);
+          setPlay(true);
+        }
       } else if (data.type === 'answer') {
         setGameStep(data);
         audio.current.pause();
@@ -71,14 +72,18 @@ function GamePage() {
         if (!songAnswerGood) setSongAnswerGood(data.songResult);
         if (!bandAnswerGood) setBandAnswerGood(data.bandResult);
         setHasValidation(true);
+      } else if (data.type === 'player') {
+        setPlayerId(data.id);
       }
     }
   }, [lastMessage]);
 
   const audio = useRef(new Audio());
 
+  const [playerId, setPlayerId] = useState('');
+
   const [animeAnswer, setAnimeAnswer] = useState('');
-  const [kindAnswer, setKindAnswer] = useState('other');
+  const [kindAnswer, setKindAnswer] = useState('opening');
   const [songAnswer, setSongAnswer] = useState('');
   const [bandAnswer, setBandAnswer] = useState('');
   const [animeAnswerGood, setAnimeAnswerGood] = useState(false);
@@ -166,7 +171,10 @@ function GamePage() {
                 <input
                   type="text"
                   id="anime"
-                  disabled={gameStep.type !== 'question' || hasValidation && animeAnswerGood}
+                  disabled={
+                    gameStep.type !== 'question' ||
+                    (hasValidation && animeAnswerGood)
+                  }
                   value={animeAnswer}
                   onChange={(e) => setAnimeAnswer(e.target.value)}
                   onKeyDown={(e) => {
@@ -186,14 +194,18 @@ function GamePage() {
                 </label>
                 <select
                   value={kindAnswer}
-                  disabled={gameStep.type !== 'question' || hasValidation && kindAnswerGood}
+                  disabled={
+                    gameStep.type !== 'question' ||
+                    (hasValidation && kindAnswerGood)
+                  }
                   onChange={(e) => setKindAnswer(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       sendAnswer();
                     }
                   }}
-                  className={`${hasValidation ? (kindAnswerGood ? 'border-green-500 text-green-500 hover:border-green-600 focus:border-green-700' : 'border-red-500 text-red-500 hover:border-red-600 focus:border-red-700') : 'border-slate-200 hover:border-slate-300 focus:border-slate-400'} w-2/3 rounded-md border p-1 shadow-sm focus:shadow focus:outline-none`}                >
+                  className={`${hasValidation ? (kindAnswerGood ? 'border-green-500 text-green-500 hover:border-green-600 focus:border-green-700' : 'border-red-500 text-red-500 hover:border-red-600 focus:border-red-700') : 'border-slate-200 hover:border-slate-300 focus:border-slate-400'} w-2/3 rounded-md border p-1 shadow-sm focus:shadow focus:outline-none`}
+                >
                   <option value="opening">Opening</option>
                   <option value="ending">Ending</option>
                   <option value="insert">Insert</option>
@@ -217,7 +229,8 @@ function GamePage() {
                       sendAnswer();
                     }
                   }}
-                  className={`${hasValidation ? (songAnswerGood ? 'border-green-500 text-green-500 hover:border-green-600 focus:border-green-700' : 'border-red-500 text-red-500 hover:border-red-600 focus:border-red-700') : 'border-slate-200 hover:border-slate-300 focus:border-slate-400'} w-2/3 rounded-md border p-1 shadow-sm focus:shadow focus:outline-none`}                />
+                  className={`${hasValidation ? (songAnswerGood ? 'border-green-500 text-green-500 hover:border-green-600 focus:border-green-700' : 'border-red-500 text-red-500 hover:border-red-600 focus:border-red-700') : 'border-slate-200 hover:border-slate-300 focus:border-slate-400'} w-2/3 rounded-md border p-1 shadow-sm focus:shadow focus:outline-none`}
+                />
               </div>
               <div className="flex flex-row gap-4 pb-3">
                 <label
@@ -237,10 +250,11 @@ function GamePage() {
                       sendAnswer();
                     }
                   }}
-                  className={`${hasValidation ? (bandAnswerGood ? 'border-green-500 text-green-500 hover:border-green-600 focus:border-green-700' : 'border-red-500 text-red-500 hover:border-red-600 focus:border-red-700') : 'border-slate-200 hover:border-slate-300 focus:border-slate-400'} w-2/3 rounded-md border p-1 shadow-sm focus:shadow focus:outline-none`}                />
+                  className={`${hasValidation ? (bandAnswerGood ? 'border-green-500 text-green-500 hover:border-green-600 focus:border-green-700' : 'border-red-500 text-red-500 hover:border-red-600 focus:border-red-700') : 'border-slate-200 hover:border-slate-300 focus:border-slate-400'} w-2/3 rounded-md border p-1 shadow-sm focus:shadow focus:outline-none`}
+                />
               </div>
               <button
-                className="disabled:opacity-50 ml-32 w-20 rounded bg-red-600 p-2 text-zinc-200"
+                className="ml-32 w-20 rounded bg-red-600 p-2 text-zinc-200 disabled:opacity-50"
                 onClick={sendAnswer}
                 disabled={gameStep.type !== 'question' || !canAnswer}
                 onKeyDown={(e) => {
@@ -275,11 +289,19 @@ function GamePage() {
           )}
         </Card>
         <Card title="Player">
-          {gameStep?.players?.map((player) => (
-            <span key={player.name}>
-              {player.name} {player.score}
-            </span>
-          ))}
+          {Object.entries(gameStep.players).map(
+            ([id, player]: [string, object]) => {
+              return (
+                <div
+                  key={id}
+                  className={`text-s flex flex-row ${player.hasAnsweredCorrectly ? 'text-green-500' : ''} ${id === playerId ? 'bg-red-300/20' : ''} mb-2 border-b-2 border-red-900 p-2`}
+                >
+                  <div className="w-4/5">{player.name}</div>
+                  <div>{player.score} Pts</div>
+                </div>
+              );
+            }
+          )}
         </Card>
       </div>
       <Card title="Last answers">

@@ -12,9 +12,10 @@ import (
 )
 
 type Player struct {
-	Name  string    `json:"name"`
-	Id    uuid.UUID `json:"-"`
-	Score int       `json:"score"`
+	Name                 string    `json:"name"`
+	Id                   uuid.UUID `json:"-"`
+	Score                int       `json:"score"`
+	HasAnsweredCorrectly bool      `json:"hasAnsweredCorrectly"`
 }
 
 type SongKind string
@@ -46,7 +47,7 @@ const (
 )
 
 type Game struct {
-	Players        []Player `json:"players"`
+	Players        map[string]Player `json:"players"`
 	songs          []Song
 	Song           Song `json:"song"`
 	Index          int  `json:"index"`
@@ -62,7 +63,7 @@ const songsLength = 5
 func NewGame(gameBroadcast chan []byte, statsBroadcast chan []byte) *Game {
 	songs := getRandomSongs(songsLength)
 	game := &Game{
-		[]Player{},
+		make(map[string]Player),
 		songs,
 		songs[0],
 		1,
@@ -84,14 +85,14 @@ func (g *Game) BroadcastStats() {
 }
 
 type gameStep struct {
-	Players       []Player `json:"players"`
-	Songs         []Song   `json:"songs"`
-	Song          Song     `json:"song"`
-	Type          string   `json:"type"`
-	AudioUrl      string   `json:"audioUrl"`
-	Index         int      `json:"index"`
-	SongsLength   int      `json:"songsLength"`
-	RemainingTime int      `json:"remainingTime"`
+	Players       map[string]Player `json:"players"`
+	Songs         []Song            `json:"songs"`
+	Song          Song              `json:"song"`
+	Type          string            `json:"type"`
+	AudioUrl      string            `json:"audioUrl"`
+	Index         int               `json:"index"`
+	SongsLength   int               `json:"songsLength"`
+	RemainingTime int               `json:"remainingTime"`
 }
 
 func (g *Game) start() {
@@ -150,13 +151,20 @@ func (g *Game) start() {
 func (g *Game) nextSong() {
 	g.Index++
 	g.Song = g.songs[g.Index-1]
+	for i := range g.Players {
+		player := g.Players[i]
+		player.HasAnsweredCorrectly = false
+		g.Players[i] = player
+	}
 }
 
 func (g *Game) AddPlayer(name string, client *hub.Client) {
-	g.Players = append(g.Players, Player{
-		Name: name,
-		Id:   client.Id,
-	})
+	g.Players[client.Id.String()] = Player{
+		Name:                 name,
+		Id:                   client.Id,
+		Score:                0,
+		HasAnsweredCorrectly: false,
+	}
 	if g.State == GameStatusWaiting {
 		go g.start()
 		return
@@ -210,12 +218,8 @@ func (g *Game) restart() {
 }
 
 func (g *Game) RemovePlayer(id uuid.UUID) {
-	for i, player := range g.Players {
-		if player.Id == id {
-			g.Players = append(g.Players[:i], g.Players[i+1:]...)
-			break
-		}
-	}
+
+	delete(g.Players, id.String())
 }
 
 type clientAnswer struct {
@@ -244,12 +248,10 @@ func (g *Game) HandleClientMessage(client *hub.Client, message []byte) {
 	log.Println(g.Song.Anime, a.Anime)
 	if a.Anime == g.Song.Anime {
 		log.Println("Good anime answer")
-		for i, player := range g.Players {
-			if player.Id == client.Id {
-				g.Players[i].Score++
-				break
-			}
-		}
+		player := g.Players[client.Id.String()]
+		player.Score++
+		player.HasAnsweredCorrectly = true
+		g.Players[client.Id.String()] = player
 		s.AnimeResult = true
 	} else {
 		log.Println("Bad anime answer")
@@ -259,12 +261,9 @@ func (g *Game) HandleClientMessage(client *hub.Client, message []byte) {
 	log.Println(string(g.Song.Kind), a.Kind)
 	if a.Kind == string(g.Song.Kind) {
 		log.Println("Good kind answer")
-		for i, player := range g.Players {
-			if player.Id == client.Id {
-				g.Players[i].Score++
-				break
-			}
-		}
+		player := g.Players[client.Id.String()]
+		player.Score++
+		g.Players[client.Id.String()] = player
 		s.KindResult = true
 	} else {
 		log.Println("Bad kind answer")
@@ -274,12 +273,9 @@ func (g *Game) HandleClientMessage(client *hub.Client, message []byte) {
 	log.Println(g.Song.Name, a.Song)
 	if a.Song == g.Song.Name {
 		log.Println("Good song answer")
-		for i, player := range g.Players {
-			if player.Id == client.Id {
-				g.Players[i].Score++
-				break
-			}
-		}
+		player := g.Players[client.Id.String()]
+		player.Score++
+		g.Players[client.Id.String()] = player
 		s.SongResult = true
 	} else {
 		log.Println("Bad song answer")
@@ -289,12 +285,9 @@ func (g *Game) HandleClientMessage(client *hub.Client, message []byte) {
 	log.Println(g.Song.Band, a.Band)
 	if a.Band == g.Song.Band {
 		log.Println("Good band answer")
-		for i, player := range g.Players {
-			if player.Id == client.Id {
-				g.Players[i].Score++
-				break
-			}
-		}
+		player := g.Players[client.Id.String()]
+		player.Score++
+		g.Players[client.Id.String()] = player
 		s.BandResult = true
 	} else {
 		log.Println("Bad band answer")
@@ -306,6 +299,28 @@ func (g *Game) HandleClientMessage(client *hub.Client, message []byte) {
 		panic(err)
 	}
 	client.Send <- marshal
+
+	go broadcastGame(g)
+}
+
+func broadcastGame(g *Game) {
+	if g.State == GameStatusQuestion {
+		second := time.Now().Unix()
+		step := gameStep{
+			Players:       g.Players,
+			Songs:         g.songs[:g.Index-1],
+			Type:          "question",
+			AudioUrl:      g.Song.AudioUrl,
+			Index:         g.Index,
+			SongsLength:   songsLength,
+			RemainingTime: int(g.questionTime - second),
+		}
+		marshal, err := json.Marshal(step)
+		if err != nil {
+			panic(err)
+		}
+		g.gameBroadcast <- marshal
+	}
 }
 
 func getRandomSongs(nb int) []Song {

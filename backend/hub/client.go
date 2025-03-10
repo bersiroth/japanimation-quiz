@@ -95,7 +95,7 @@ func (c *Client) writePump() {
 	defer func() {
 		ticker.Stop()
 		c.conn.Close()
-		fmt.Println("Client disconnected")
+		log.Println(fmt.Sprintf("Client %s disconnected", c.Id))
 	}()
 	for {
 		select {

@@ -15,11 +15,11 @@ type TopStats struct {
 }
 
 type GameStats struct {
-	Players     []Player   `json:"players"`
-	Index       int        `json:"index"`
-	State       GameStatus `json:"state"`
-	Songs       []Song     `json:"songs"`
-	SongsLength int        `json:"songsLength"`
+	Players     map[string]Player `json:"players"`
+	Index       int               `json:"index"`
+	State       GameStatus        `json:"state"`
+	Songs       []Song            `json:"songs"`
+	SongsLength int               `json:"songsLength"`
 }
 
 func newGameStats(g *Game) GameStats {

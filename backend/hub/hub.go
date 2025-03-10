@@ -4,10 +4,6 @@
 
 package hub
 
-import (
-	"fmt"
-)
-
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
@@ -42,7 +38,6 @@ func (h *Hub) Run(registerCallback func(h *Hub, client *Client), unregisterCallb
 		select {
 		case client := <-h.register:
 			h.clients[client] = true
-			fmt.Println("Welcome to the chat room!")
 			registerCallback(h, client)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
