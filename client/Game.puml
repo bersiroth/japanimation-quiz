@@ -1,0 +1,37 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+scale 1.25
+hide footbox
+skinparam maxMessageSize 150
+
+title Japanimation quiz
+
+actor "Player 1" as Player
+database "Game hub\n server" as Server
+'actor "Player 2" as Player2
+
+== login to game hub ==
+autonumber
+note over Player
+Client check if cookie
+exists with player ID
+and nickname
+end note
+Player -> Server ++: Connect to server with param id and nickname
+note over Server
+Server check if
+player ID exists and
+add client to hub
+end note
+Server -> Player --: Send connexion message with player ID and nickname
+note over Player
+Client create or
+update cookie with
+player ID and
+nickname
+end note
+== game ==
+autonumber
+'Player -> Server--: Request for a new question
+
+@enduml

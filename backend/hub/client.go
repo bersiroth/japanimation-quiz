@@ -40,8 +40,9 @@ var upgrader = websocket.Upgrader{
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
-	Id  uuid.UUID
-	hub *Hub
+	Id       uuid.UUID
+	Nickname string
+	hub      *Hub
 
 	// The websocket connection.
 	conn *websocket.Conn
@@ -134,13 +135,25 @@ func (c *Client) writePump() {
 
 // serveWs handles websocket requests from the peer.
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	nickname := r.URL.Query().Get("nickname")
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	client := &Client{Id: uuid.NewV4(), hub: hub, conn: conn, Send: make(chan []byte, 256)}
+	clientUuid, err := uuid.FromString(id)
+	if err != nil {
+		clientUuid = uuid.NewV4()
+	}
+	client := &Client{Id: clientUuid, Nickname: nickname, hub: hub, conn: conn, Send: make(chan []byte, 256)}
+
+	for c := range hub.clients {
+		if c.Id == client.Id {
+			return
+		}
+	}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
