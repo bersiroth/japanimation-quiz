@@ -42,7 +42,6 @@ func initHub() {
 	go gameHub.Run(func(h *hub.Hub, c *hub.Client) {
 		id := c.Id.String()
 		game.AddPlayer(c.Nickname, c)
-		log.Println(fmt.Sprintf(`New player %s`, id))
 		c.Send <- []byte(fmt.Sprintf(`{"type":"player", "id":"%s"}`, id))
 	}, func(h *hub.Hub, c *hub.Client) {
 		game.RemovePlayer(c.Id)

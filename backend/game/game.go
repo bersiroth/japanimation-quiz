@@ -2,6 +2,7 @@ package game
 
 import (
 	"encoding/json"
+	"fmt"
 	uuid "github.com/satori/go.uuid"
 	"japanimation-quiz/hub"
 	"log"
@@ -47,15 +48,16 @@ const (
 )
 
 type Game struct {
-	Players        map[string]Player `json:"players"`
-	songs          []Song
-	Song           Song `json:"song"`
-	Index          int  `json:"index"`
-	gameBroadcast  chan []byte
-	statsBroadcast chan []byte
-	State          GameStatus `json:"state"`
-	SongsLength    int        `json:"songsLength"`
-	questionTime   int64
+	Players             map[string]Player `json:"players"`
+	disconnectedPlayers map[string]Player
+	songs               []Song
+	Song                Song `json:"song"`
+	Index               int  `json:"index"`
+	gameBroadcast       chan []byte
+	statsBroadcast      chan []byte
+	State               GameStatus `json:"state"`
+	SongsLength         int        `json:"songsLength"`
+	questionTime        int64
 }
 
 const songsLength = 5
@@ -63,6 +65,7 @@ const songsLength = 5
 func NewGame(gameBroadcast chan []byte, statsBroadcast chan []byte) *Game {
 	songs := getRandomSongs(songsLength)
 	game := &Game{
+		make(map[string]Player),
 		make(map[string]Player),
 		songs,
 		songs[0],
@@ -159,11 +162,18 @@ func (g *Game) nextSong() {
 }
 
 func (g *Game) AddPlayer(name string, client *hub.Client) {
-	g.Players[client.Id.String()] = Player{
-		Name:                 name,
-		Id:                   client.Id,
-		Score:                0,
-		HasAnsweredCorrectly: false,
+	if player, exists := g.disconnectedPlayers[client.Id.String()]; exists {
+		log.Println(fmt.Sprintf(`Reconnect player %s, %s`, client.Id.String(), name))
+		player.HasAnsweredCorrectly = false
+		g.Players[client.Id.String()] = player
+	} else {
+		log.Println(fmt.Sprintf(`New player %s, %s`, client.Id.String(), name))
+		g.Players[client.Id.String()] = Player{
+			Name:                 name,
+			Id:                   client.Id,
+			Score:                0,
+			HasAnsweredCorrectly: false,
+		}
 	}
 	if g.State == GameStatusWaiting {
 		go g.start()
@@ -218,7 +228,8 @@ func (g *Game) restart() {
 }
 
 func (g *Game) RemovePlayer(id uuid.UUID) {
-
+	player := g.Players[id.String()]
+	g.disconnectedPlayers[id.String()] = player
 	delete(g.Players, id.String())
 }
 

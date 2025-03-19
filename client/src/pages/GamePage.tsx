@@ -3,7 +3,7 @@ import useWebSocket from 'react-use-websocket';
 import Card from '../components/Card.tsx';
 import AnimeCard from '../components/AnimeCard.tsx';
 import { CountdownCircleTimer } from 'react-countdown-circle-timer';
-import Cookies from "js-cookie";
+import Cookies from 'js-cookie';
 
 function GamePage() {
   const [gameStep, setGameStep] = useState({
@@ -284,16 +284,16 @@ function GamePage() {
               >
                 <span>Send</span>
               </button>
+              <div className="h-5">
+                {gameStep.type === 'answer' && (
+                  <span className="text-s">
+                    Answer : {gameStep.song.anime} {gameStep.song.name}
+                  </span>
+                )}
+              </div>
             </>
           )}
-          <div className="h-5">
-            {gameStep.type === 'answer' && (
-              <span className="text-s">
-                Answer : {gameStep.song.anime} {gameStep.song.name}
-              </span>
-            )}
-          </div>
-          {state === 'Join' && (
+          {state === 'Join' && !Cookies.get('nickname') && (
             <>
               <div className="flex flex-row gap-4 pb-3">
                 <label htmlFor="nickname" className={`w-28 p-1 text-right`}>
@@ -319,9 +319,24 @@ function GamePage() {
                 onClick={() => {
                   Cookies.set('nickname', nickname);
                   setState('Playing');
-                  // if (gameStep.type === 'question') {
-                  //   audio.current.muted = false;
-                  // }
+                }}
+              >
+                JOIN GAME
+              </button>
+            </>
+          )}
+          {state === 'Join' && Cookies.get('nickname') && (
+            <>
+              <div className="flex justify-center">
+                Hello {Cookies.get('nickname')} !
+              </div>
+              <div className="flex justify-center pb-5">
+                Would you like to play ?
+              </div>
+              <button
+                className="rounded bg-red-600 p-2 text-zinc-200"
+                onClick={() => {
+                  setState('Playing');
                 }}
               >
                 JOIN GAME
