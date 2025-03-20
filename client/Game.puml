@@ -1,37 +1,164 @@
 @startuml
 'https://plantuml.com/sequence-diagram
-scale 1.25
+scale 1
 hide footbox
-skinparam maxMessageSize 150
+skinparam maxMessageSize 250
+!pragma teoz true
+skinparam sequenceMessageAlign center
 
 title Japanimation quiz
 
 actor "Player 1" as Player
 database "Game hub\n server" as Server
-'actor "Player 2" as Player2
+actor "Player 2" as Player2
 
-== login to game hub ==
-autonumber
-note over Player
-Client check if cookie
-exists with player ID
-and nickname
-end note
-Player -> Server ++: Connect to server with param id and nickname
+== Login ==
+
+activate Server
 note over Server
-Server check if
-player ID exists and
-add client to hub
+Server starting and initialize game
+with select random question, cut
+random sound and waiting for
+player connection.
 end note
-Server -> Player --: Send connexion message with player ID and nickname
+
+activate Player
 note over Player
-Client create or
-update cookie with
-player ID and
-nickname
+Client check if cookie exists
+with player ID and nickname
 end note
-== game ==
-autonumber
-'Player -> Server--: Request for a new question
+Player -> Server: Connect to server with id and nickname params
+deactivate Player
+
+Server -> Player: Send player:connection message with player ID and nickname
+
+activate Player
+note over Player
+Client create or update cookie
+with player ID and nickname
+end note
+/note over Server
+Server check if player ID exists
+and add client to game hub.
+end note
+deactivate Player
+
+== Game ==
+
+note over Server
+On player connection, if game is in
+waiting state (no player), game start
+and broadcast game:question message
+for first question.
+end note
+note over Server
+If the game has already started,
+server sent to player the current
+question, answer or ending message
+relating to game status.
+end note
+Server -> Player: Send game:question message
+& Server -> Player2: Send game:question message
+
+activate Player
+activate Player2
+note over Player
+Player listens audio, sees timer,
+players listing and answer form.
+end note
+/note over Player2
+Player listens audio, sees timer,
+players listing and answer form.
+end note
+deactivate Player2
+
+Player -> Server: Send client:answer message with answer params
+deactivate Player
+note over Server
+Server check if answer is correct, update
+player score and player answer status.
+Send game:validation message to player,
+and broadcast game:question message to
+update players listing.
+end note
+
+Server -> Player: Send game:validation message
+activate Player
+note over Player
+Player update form with validation.
+end note
+deactivate Player
+
+Server -> Player: Send game:question message
+& Server -> Player2: Send game:question message
+activate Player
+activate Player2
+note over Player
+Update player listing with new score
+and flag player with correct answer.
+end note
+/note over Player2
+Update player listing with new score
+and flag player with correct answer.
+end note
+deactivate Player2
+deactivate Player
+
+...30s after server broadcast\ngame:question message...
+
+Server -> Player: Send game:answer message
+& Server -> Player2: Send game:answer message
+activate Player
+activate Player2
+note over Player
+Player sees answer details
+and short video
+end note
+/note over Player2
+Player sees answer details
+and short video
+end note
+deactivate Player2
+deactivate Player
+
+...30s after server broadcast\ngame:answer message...
+
+note over Server
+Server setup next song and
+reset player answer status
+end note
+
+...After 10 questions...
+
+Server -> Player: Send game:ending message
+& Server -> Player2: Send game:ending message
+activate Player
+activate Player2
+note over Player
+Player sees game ending results
+with leaderboard and timer for
+next game.
+end note
+/note over Player2
+Player sees game ending results
+with leaderboard and timer for
+next game.
+end note
+deactivate Player2
+deactivate Player
+
+note over Server
+Game is reinitialised with a
+new random questions and sounds.
+end note
+
+...30s after server broadcast\ngame:ending message...
+
+note over Server
+if at least one player is still
+connected, the game starts,
+otherwise game switches to
+waiting status.
+end note
 
 @enduml

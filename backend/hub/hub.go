@@ -54,7 +54,6 @@ func (h *Hub) Run(registerCallback func(h *Hub, client *Client), unregisterCallb
 		select {
 		case client := <-h.register:
 			h.clients[client] = true
-			registerCallback(h, client)
 			marshal, err := json.Marshal(
 				ConnexionMessage{
 					Id:       client.Id.String(),
@@ -74,6 +73,7 @@ func (h *Hub) Run(registerCallback func(h *Hub, client *Client), unregisterCallb
 				panic(err)
 			}
 			client.Send <- marshal
+			registerCallback(h, client)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
