@@ -29,7 +29,7 @@ func main() {
 func initHub() {
 	gameHub := hub.NewHub()
 	statsHub := hub.NewHub()
-	game := game.NewGame(gameHub.Broadcast, statsHub.Broadcast)
+	game := game.NewGame(gameHub, statsHub.Broadcast)
 
 	go statsHub.Run(func(h *hub.Hub, c *hub.Client) {
 		go game.BroadcastStats()

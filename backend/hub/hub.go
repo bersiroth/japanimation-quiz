@@ -6,7 +6,13 @@ package hub
 
 import (
 	"encoding/json"
+	"time"
 )
+
+type Message struct {
+	MessageName string
+	JsonData    json.RawMessage
+}
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
@@ -15,7 +21,7 @@ type Hub struct {
 	clients map[*Client]bool
 
 	// Inbound messages from the clients.
-	Broadcast chan []byte
+	Broadcast chan *Message
 
 	// Read messages from the clients.
 	read chan *ClientMessage
@@ -29,7 +35,7 @@ type Hub struct {
 
 func NewHub() *Hub {
 	return &Hub{
-		Broadcast:  make(chan []byte),
+		Broadcast:  make(chan *Message),
 		read:       make(chan *ClientMessage),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
@@ -40,6 +46,33 @@ func NewHub() *Hub {
 type ConnexionMessage struct {
 	Id       string `json:"id"`
 	Nickname string `json:"nickname"`
+}
+
+type formatedMessage struct {
+	Name     string `json:"name"`
+	Data     string `json:"data"`
+	SentDate string `json:"sentDate"`
+	ClientId string `json:"clientId"`
+}
+
+func (h *Hub) SendMessageToClient(message *Message, client *Client) {
+	marshal, err := json.Marshal(
+		formatedMessage{
+			Name:     message.MessageName,
+			Data:     string(message.JsonData),
+			SentDate: time.Now().String(),
+			ClientId: client.Id.String(),
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+	select {
+	case client.Send <- marshal:
+	default:
+		close(client.Send)
+		delete(h.clients, client)
+	}
 }
 
 func (h *Hub) Run(registerCallback func(h *Hub, client *Client), unregisterCallback func(h *Hub, client *Client), readCallback func(message *ClientMessage)) {
@@ -55,7 +88,10 @@ func (h *Hub) Run(registerCallback func(h *Hub, client *Client), unregisterCallb
 			if err != nil {
 				panic(err)
 			}
-			client.SendMessage("player:connection", string(marshal))
+			h.SendMessageToClient(&Message{
+				MessageName: "player:connection",
+				JsonData:    marshal,
+			}, client)
 			registerCallback(h, client)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
@@ -65,12 +101,7 @@ func (h *Hub) Run(registerCallback func(h *Hub, client *Client), unregisterCallb
 			}
 		case message := <-h.Broadcast:
 			for client := range h.clients {
-				select {
-				case client.Send <- message:
-				default:
-					close(client.Send)
-					delete(h.clients, client)
-				}
+				h.SendMessageToClient(message, client)
 			}
 		case message := <-h.read:
 			readCallback(message)

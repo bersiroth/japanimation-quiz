@@ -53,8 +53,8 @@ type Game struct {
 	songs               []Song
 	Song                Song `json:"song"`
 	Index               int  `json:"index"`
-	gameBroadcast       chan []byte
-	statsBroadcast      chan []byte
+	gameHub             *hub.Hub
+	statsBroadcast      chan *hub.Message
 	State               GameStatus `json:"state"`
 	SongsLength         int        `json:"songsLength"`
 	questionTime        int64
@@ -62,7 +62,7 @@ type Game struct {
 
 const songsLength = 5
 
-func NewGame(gameBroadcast chan []byte, statsBroadcast chan []byte) *Game {
+func NewGame(gameHub *hub.Hub, statsBroadcast chan *hub.Message) *Game {
 	songs := getRandomSongs(songsLength)
 	game := &Game{
 		make(map[string]Player),
@@ -70,7 +70,7 @@ func NewGame(gameBroadcast chan []byte, statsBroadcast chan []byte) *Game {
 		songs,
 		songs[0],
 		1,
-		gameBroadcast,
+		gameHub,
 		statsBroadcast,
 		GameStatusWaiting,
 		songsLength,
@@ -80,11 +80,11 @@ func NewGame(gameBroadcast chan []byte, statsBroadcast chan []byte) *Game {
 }
 
 func (g *Game) BroadcastStats() {
-	marshal, err := json.Marshal(NewStats(g))
-	if err != nil {
-		panic(err)
-	}
-	g.statsBroadcast <- marshal
+	//marshal, err := json.Marshal(NewStats(g))
+	//if err != nil {
+	//	panic(err)
+	//}
+	//g.statsBroadcast <- marshal
 }
 
 type gameStep struct {
@@ -120,7 +120,10 @@ func (g *Game) start() {
 		if err != nil {
 			panic(err)
 		}
-		g.gameBroadcast <- marshal
+		g.gameHub.Broadcast <- &hub.Message{
+			MessageName: "game:question:init",
+			JsonData:    marshal,
+		}
 		time.Sleep(32 * time.Second)
 
 		log.Println("Step answer")
@@ -137,7 +140,10 @@ func (g *Game) start() {
 		if err != nil {
 			panic(err)
 		}
-		g.gameBroadcast <- marshal
+		g.gameHub.Broadcast <- &hub.Message{
+			MessageName: "game:answer",
+			JsonData:    marshal,
+		}
 		time.Sleep(5 * time.Second)
 
 		if g.Index == songsLength {
@@ -194,7 +200,10 @@ func (g *Game) AddPlayer(name string, client *hub.Client) {
 		if err != nil {
 			panic(err)
 		}
-		client.Send <- marshal
+		g.gameHub.SendMessageToClient(&hub.Message{
+			MessageName: "game:question:update",
+			JsonData:    marshal,
+		}, client)
 	}
 	if g.State == GameStatusAnswer {
 		marshal, err := json.Marshal(gameStep{
@@ -209,7 +218,10 @@ func (g *Game) AddPlayer(name string, client *hub.Client) {
 		if err != nil {
 			panic(err)
 		}
-		client.Send <- marshal
+		g.gameHub.SendMessageToClient(&hub.Message{
+			MessageName: "game:answer",
+			JsonData:    marshal,
+		}, client)
 	}
 }
 
@@ -309,7 +321,11 @@ func (g *Game) HandleClientMessage(client *hub.Client, message []byte) {
 	if err != nil {
 		panic(err)
 	}
-	client.Send <- marshal
+
+	g.gameHub.SendMessageToClient(&hub.Message{
+		MessageName: "game:validation",
+		JsonData:    marshal,
+	}, client)
 
 	go broadcastGame(g)
 }
@@ -330,7 +346,10 @@ func broadcastGame(g *Game) {
 		if err != nil {
 			panic(err)
 		}
-		g.gameBroadcast <- marshal
+		g.gameHub.Broadcast <- &hub.Message{
+			MessageName: "game:question:update",
+			JsonData:    marshal,
+		}
 	}
 }
 

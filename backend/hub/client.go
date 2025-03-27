@@ -7,7 +7,6 @@ package hub
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/dgraph-io/ristretto"
 	"github.com/eko/gocache/lib/v4/cache"
@@ -61,28 +60,6 @@ type Client struct {
 type ClientMessage struct {
 	Client  *Client
 	Message []byte
-}
-
-type formatedMessage struct {
-	Name     string `json:"name"`
-	Data     string `json:"data"`
-	SentDate string `json:"sentDate"`
-	ClientId string `json:"clientId"`
-}
-
-func (c *Client) SendMessage(messageName string, jsonData string) {
-	marshal, err := json.Marshal(
-		formatedMessage{
-			Name:     messageName,
-			Data:     jsonData,
-			SentDate: time.Now().String(),
-			ClientId: c.Id.String(),
-		},
-	)
-	if err != nil {
-		panic(err)
-	}
-	c.Send <- marshal
 }
 
 type cachedClient struct {
@@ -174,10 +151,10 @@ func (c *Client) writePump() {
 	}
 }
 
-var marshal *marshaler.Marshaler
+var marshalerCache *marshaler.Marshaler
 
 func initCache() {
-	if marshal != nil {
+	if marshalerCache != nil {
 		return
 	}
 	ristrettoCache, err := ristretto.NewCache(&ristretto.Config{
@@ -191,7 +168,7 @@ func initCache() {
 	ristrettoStore := ristretto_store.NewRistretto(ristrettoCache)
 
 	cacheManager := cache.New[any](ristrettoStore)
-	marshal = marshaler.New(cacheManager)
+	marshalerCache = marshaler.New(cacheManager)
 }
 
 // ServeWs handles websocket requests from the peer.
@@ -213,11 +190,11 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	initCache()
 	ctx := context.Background()
 	var client *Client
-	cachedClientValue, err := marshal.Get(ctx, "clientUuid.String()", new(cachedClient))
+	cachedClientValue, err := marshalerCache.Get(ctx, "clientUuid.String()", new(cachedClient))
 	if err != nil && cachedClientValue == nil {
 		client = &Client{Id: clientUuid, Nickname: nickname, hub: hub, conn: conn, Send: make(chan []byte, 256)}
 		log.Println("-- Client not found in cache --")
-		err = marshal.Set(ctx, "clientUuid.String()", client.getCachedClient(), store.WithExpiration(7*24*time.Hour))
+		err = marshalerCache.Set(ctx, "clientUuid.String()", client.getCachedClient(), store.WithExpiration(7*24*time.Hour))
 		if err != nil {
 			panic(err)
 		}
