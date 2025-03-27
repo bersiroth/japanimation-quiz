@@ -23,7 +23,7 @@ function GamePage() {
     {
       queryParams: {
         id: Cookies.get('clientId') ?? '',
-        nickname,
+        nickname: nickname ?? '',
       },
       onOpen: () => console.log('game opened'),
       onError: (event) => console.error('game error', event),
@@ -34,16 +34,22 @@ function GamePage() {
 
   type GameEvent = {
     name: string;
-    data: object;
+    data: string;
     sentDate: string;
     clientId: string;
+  };
+
+  type playerConnectionDataEvent = {
+    id: string;
+    nickname: string;
   };
 
   useEffect(() => {
     if (lastMessage !== null) {
       const gameEvent: GameEvent = JSON.parse(lastMessage.data);
-      if (gameEvent.name === 'connexion') {
-        Cookies.set('clientId', gameEvent.clientId);
+      if (gameEvent.name === 'player:connection') {
+        const eventData: playerConnectionDataEvent = JSON.parse(gameEvent.data);
+        Cookies.set('clientId', eventData.id);
       } else if (gameEvent.name === 'toto') {
         if (gameStep.type === 'question') {
           setGameStep(gameEvent.data);

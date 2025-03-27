@@ -1,0 +1,26 @@
+# Japanimation quiz
+
+## TODO
+
+- [ ] fusionner les states, answerGood, answer, audio, client (id, nickname)
+- [ ] trim + full minuscule sur la comparaison entre la proposition de réponse et la réponse (faire un contains a la place du égal pour la comparaison ?)
+- [ ] 1 point pour l'anime + 1 bonus en plus (dans le cas anime + autre bonne reponse)
+- [ ] a l'init de la game faire le découpage des musiques pour avoir 30s random
+- [ ] au moment du résultat jouer la vidéo de la réponse
+- [ ] afficher les régles sur la page de jeu
+- [ ] faire le design de la partie score
+- [ ] update des stats a chaque action pour la home page
+- [ ] faire le design de la page d'accueil
+- [ ] faire une save state du jeu pour relancer en cas de crash
+- [ ] setup un redis pour le cache
+- [x] ajouter un cache de 7j des clients pour reconnection
+- [x] faire le schema des messages pendant le jeu
+- [x] pouvoir setup un pseudo
+- [x] se reconnecter avec les mêmes informations en cas de déco
+- [x] connection par cookie avec pseudo
+- [x] dans la liste de player voir s'il existe deja et dans ce cas le remplacer avec son score
+- [x] flager en temps réel dans la liste de joueurs, les joueurs qui trouvent le résultat
+- [x] reset des champs au debut du nouvelle musique
+- [x] faire en sorte qu'on ne puisse pas valider plusieurs fois un champ où il y a eu une bonne réponse
+- [x] passer les champs du formulaire en vert ou rouge suite à la validation serveur
+- [x] ajouter un timer entre 2 validation du formulaire de réponse pour éviter le spam / brute force

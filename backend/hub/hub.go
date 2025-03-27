@@ -6,7 +6,6 @@ package hub
 
 import (
 	"encoding/json"
-	"time"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -38,12 +37,6 @@ func NewHub() *Hub {
 	}
 }
 
-type Message struct {
-	Name     string `json:"name"`
-	Data     string `json:"data"`
-	SentDate string `json:"sentDate"`
-	ClientId string `json:"clientId"`
-}
 type ConnexionMessage struct {
 	Id       string `json:"id"`
 	Nickname string `json:"nickname"`
@@ -62,17 +55,7 @@ func (h *Hub) Run(registerCallback func(h *Hub, client *Client), unregisterCallb
 			if err != nil {
 				panic(err)
 			}
-			marshal, err = json.Marshal(
-				Message{
-					Name:     "connexion",
-					Data:     string(marshal),
-					SentDate: time.Now().String(),
-					ClientId: client.Id.String(),
-				})
-			if err != nil {
-				panic(err)
-			}
-			client.Send <- marshal
+			client.SendMessage("player:connection", string(marshal))
 			registerCallback(h, client)
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {

@@ -16,16 +16,16 @@ actor "Player 2" as Player2
 
 activate Server
 note over Server
-Server starting and initialize game
-with select random question, cut
-random sound and waiting for
-player connection.
+    Server starting and initialize game
+    with select random question, cut
+    random sound and waiting for
+    player connection.
 end note
 
 activate Player
 note over Player
-Client check if cookie exists
-with player ID and nickname
+    Client check if cookie exists
+    with player ID and nickname
 end note
 Player -> Server: Connect to server with id and nickname params
 deactivate Player
@@ -34,131 +34,150 @@ Server -> Player: Send player:connection message with player ID and nickname
 
 activate Player
 note over Player
-Client create or update cookie
-with player ID and nickname
+    Client create or update cookie
+    with player ID and nickname
 end note
 /note over Server
-Server check if player ID exists
-and add client to game hub.
+    Server check if player ID exists
+    and add client to game hub.
 end note
 deactivate Player
 
 == Game ==
 
 note over Server
-On player connection, if game is in
-waiting state (no player), game start
-and broadcast game:question message
-for first question.
+    On player connection, if game is in
+    waiting state (no player), game start
+    and broadcast game:question message
+    for first question.
 end note
 note over Server
-If the game has already started,
-server sent to player the current
-question, answer or ending message
-relating to game status.
-end note
-Server -> Player: Send game:question message
-& Server -> Player2: Send game:question message
-
-activate Player
-activate Player2
-note over Player
-Player listens audio, sees timer,
-players listing and answer form.
-end note
-/note over Player2
-Player listens audio, sees timer,
-players listing and answer form.
-end note
-deactivate Player2
-
-Player -> Server: Send client:answer message with answer params
-deactivate Player
-note over Server
-Server check if answer is correct, update
-player score and player answer status.
-Send game:validation message to player,
-and broadcast game:question message to
-update players listing.
+    If the game has already started,
+    server sent to player the current
+    question, answer or ending message
+    relating to game status.
 end note
 
-Server -> Player: Send game:validation message
-activate Player
-note over Player
-Player update form with validation.
-end note
-deactivate Player
+loop 10 times
+    group question
+        Server -> Player: Send game:question:init message
+        & Server -> Player2: Send game:question:init message
 
-Server -> Player: Send game:question message
-& Server -> Player2: Send game:question message
-activate Player
-activate Player2
-note over Player
-Update player listing with new score
-and flag player with correct answer.
-end note
-/note over Player2
-Update player listing with new score
-and flag player with correct answer.
-end note
-deactivate Player2
-deactivate Player
+        activate Player
+        activate Player2
+        note over Player
+            Player listens audio, sees timer,
+            players listing and answer form.
+        end note
+        /note over Player2
+            Player listens audio, sees timer,
+            players listing and answer form.
+        end note
+        deactivate Player2
 
-...30s after server broadcast\ngame:question message...
+        Player -> Server: Send client:answer message with answer params
+        deactivate Player
+        note over Server
+            Server check if answer is correct, update
+            player score and player answer status.
+            Send game:validation message to player,
+            and broadcast game:question:update
+            message to update players listing.
+        end note
 
-Server -> Player: Send game:answer message
-& Server -> Player2: Send game:answer message
-activate Player
-activate Player2
-note over Player
-Player sees answer details
-and short video
-end note
-/note over Player2
-Player sees answer details
-and short video
-end note
-deactivate Player2
-deactivate Player
+        Server -> Player: Send game:validation message
+        activate Player
+        note over Player
+            Player update form with validation.
+        end note
+        deactivate Player
 
-...30s after server broadcast\ngame:answer message...
+        activate Player2
+        note over Player2
+            Player have a deconnection, when he
+            comeback, client check if cookie exists
+            with player ID and client reconnect to
+            game with same player ID.
+        end note
+        Player2 -> Server: Connect to server with same id
+        deactivate Player2
+        Server -> Player2: Send game:question:update message
+        activate Player2
+        note over Player2
+            Player listens audio, sees timer,
+            players listing and answer form.
+        end note
+        deactivate Player2
 
-note over Server
-Server setup next song and
-reset player answer status
-end note
+        Server -> Player: Send game:question:update message
+        & Server -> Player2: Send game:question:update message
+        activate Player
+        activate Player2
+        note over Player
+            Update player listing with new score
+            and flag player with correct answer.
+        end note
+        /note over Player2
+            Update player listing with new score
+            and flag player with correct answer.
+        end note
+        deactivate Player2
+        deactivate Player
+    end
+    ...30s after server broadcast\ngame:question message...
 
-...After 10 questions...
+    group answer
+        Server -> Player: Send game:answer message
+        & Server -> Player2: Send game:answer message
+        activate Player
+        activate Player2
+        note over Player
+            Player sees answer details
+            and short video
+        end note
+        /note over Player2
+            Player sees answer details
+            and short video
+        end note
+        /note over Server
+            Server setup next song and
+            reset player answer status
+        end note
+        deactivate Player2
+        deactivate Player
+    end
+    ...30s after server broadcast\ngame:answer message...
+
+end
 
 Server -> Player: Send game:ending message
 & Server -> Player2: Send game:ending message
 activate Player
 activate Player2
 note over Player
-Player sees game ending results
-with leaderboard and timer for
-next game.
+    Player sees game ending results
+    with leaderboard and timer for
+    next game.
 end note
 /note over Player2
-Player sees game ending results
-with leaderboard and timer for
-next game.
+    Player sees game ending results
+    with leaderboard and timer for
+nex t game.
+end note
+/note over Server
+    Game is reinitialised with a
+    new random questions and sounds.
 end note
 deactivate Player2
 deactivate Player
-
-note over Server
-Game is reinitialised with a
-new random questions and sounds.
-end note
 
 ...30s after server broadcast\ngame:ending message...
 
 note over Server
 if at least one player is still
-connected, the game starts,
-otherwise game switches to
-waiting status.
+    connected, the game starts,
+    otherwise game switches to
+    waiting status.
 end note
 
 @enduml

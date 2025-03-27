@@ -6,7 +6,14 @@ package hub
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/dgraph-io/ristretto"
+	"github.com/eko/gocache/lib/v4/cache"
+	"github.com/eko/gocache/lib/v4/marshaler"
+	"github.com/eko/gocache/lib/v4/store"
+	ristretto_store "github.com/eko/gocache/store/ristretto/v4"
 	"github.com/gorilla/websocket"
 	uuid "github.com/satori/go.uuid"
 	"log"
@@ -54,6 +61,40 @@ type Client struct {
 type ClientMessage struct {
 	Client  *Client
 	Message []byte
+}
+
+type formatedMessage struct {
+	Name     string `json:"name"`
+	Data     string `json:"data"`
+	SentDate string `json:"sentDate"`
+	ClientId string `json:"clientId"`
+}
+
+func (c *Client) SendMessage(messageName string, jsonData string) {
+	marshal, err := json.Marshal(
+		formatedMessage{
+			Name:     messageName,
+			Data:     jsonData,
+			SentDate: time.Now().String(),
+			ClientId: c.Id.String(),
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+	c.Send <- marshal
+}
+
+type cachedClient struct {
+	Id       uuid.UUID
+	Nickname string
+}
+
+func (c *Client) getCachedClient() cachedClient {
+	return cachedClient{
+		Id:       c.Id,
+		Nickname: c.Nickname,
+	}
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -133,10 +174,31 @@ func (c *Client) writePump() {
 	}
 }
 
+var marshal *marshaler.Marshaler
+
+func initCache() {
+	if marshal != nil {
+		return
+	}
+	ristrettoCache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1000,
+		MaxCost:     100,
+		BufferItems: 64,
+	})
+	if err != nil {
+		panic(err)
+	}
+	ristrettoStore := ristretto_store.NewRistretto(ristrettoCache)
+
+	cacheManager := cache.New[any](ristrettoStore)
+	marshal = marshaler.New(cacheManager)
+}
+
 // ServeWs handles websocket requests from the peer.
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	nickname := r.URL.Query().Get("nickname")
+
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -147,7 +209,23 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		clientUuid = uuid.NewV4()
 	}
-	client := &Client{Id: clientUuid, Nickname: nickname, hub: hub, conn: conn, Send: make(chan []byte, 256)}
+
+	initCache()
+	ctx := context.Background()
+	var client *Client
+	cachedClientValue, err := marshal.Get(ctx, "clientUuid.String()", new(cachedClient))
+	if err != nil && cachedClientValue == nil {
+		client = &Client{Id: clientUuid, Nickname: nickname, hub: hub, conn: conn, Send: make(chan []byte, 256)}
+		log.Println("-- Client not found in cache --")
+		err = marshal.Set(ctx, "clientUuid.String()", client.getCachedClient(), store.WithExpiration(7*24*time.Hour))
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		log.Println("-- Client found in cache --")
+		clientData := cachedClientValue.(*cachedClient) // Type assertion
+		client = &Client{Id: clientData.Id, Nickname: clientData.Nickname, hub: hub, conn: conn, Send: make(chan []byte, 256)}
+	}
 
 	for c := range hub.clients {
 		if c.Id == client.Id {
