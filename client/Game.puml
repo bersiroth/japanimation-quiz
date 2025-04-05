@@ -162,7 +162,7 @@ end note
 /note over Player2
     Player sees game ending results
     with leaderboard and timer for
-nex t game.
+    next game.
 end note
 /note over Server
     Game is reinitialised with a
@@ -174,7 +174,7 @@ deactivate Player
 ...30s after server broadcast\ngame:ending message...
 
 note over Server
-if at least one player is still
+    if at least one player is still
     connected, the game starts,
     otherwise game switches to
     waiting status.

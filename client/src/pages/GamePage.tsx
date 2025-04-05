@@ -7,11 +7,13 @@ import Cookies from 'js-cookie';
 
 function GamePage() {
   const [gameStep, setGameStep] = useState({
-    players: [],
+    players: [] as player[],
+    songs: [] as song[],
     audioUrl: '',
-    song: {},
-    type: '',
+    song: {} as song,
     remainingTime: 30,
+    index: 1,
+    songsLength: 10,
   });
   const [duration, setDuration] = useState(0);
   const [current, setCurrent] = useState(0);
@@ -44,51 +46,84 @@ function GamePage() {
     nickname: string;
   };
 
+  type player = {
+    name: string;
+    score: number;
+    hasAnsweredCorrectly: boolean;
+  };
+
+  type song = {
+    name: string;
+    anime: string;
+    band: string;
+    trackName: string;
+    coverUrl: string;
+    audioUrl: string;
+  };
+
+  type gameQuestionDataEvent = {
+    players: player[];
+    audioUrl: string;
+    song: song;
+    songs: song[];
+    remainingTime: number;
+    index: number;
+    songsLength: number;
+  };
+
+  type gameAnswerDataEvent = {
+    players: player[];
+    audioUrl: string;
+    song: song;
+    songs: song[];
+    remainingTime: number;
+    index: number;
+    songsLength: number;
+  };
+
   useEffect(() => {
     if (lastMessage !== null) {
       const gameEvent: GameEvent = JSON.parse(lastMessage.data);
       if (gameEvent.name === 'player:connection') {
         const eventData: playerConnectionDataEvent = JSON.parse(gameEvent.data);
         Cookies.set('clientId', eventData.id);
-      } else if (gameEvent.name === 'toto') {
-        if (gameStep.type === 'question') {
-          setGameStep(gameEvent.data);
-        } else {
-          setHasValidation(false);
-          setAnimeAnswerGood(false);
-          setKindAnswerGood(false);
-          setSongAnswerGood(false);
-          setBandAnswerGood(false);
-          setAnimeAnswer('');
-          setSongAnswer('');
-          setKindAnswer('opening');
-          setBandAnswer('');
-          setGameStep(gameEvent.data);
-          audio.current.pause();
-          audio.current.currentTime = 30 - gameEvent.data.remainingTime;
-          audio.current.src =
-            'http://localhost:8080/' + gameEvent.data.audioUrl;
-          setDuration(0);
-          audio.current.onloadedmetadata = () => {
-            setDuration(parseInt(audio.current.duration));
-            console.log('duration', parseInt(audio.current.duration));
-          };
-          audio.current.ontimeupdate = () => {
-            setCurrent(parseInt(audio.current.currentTime));
-          };
-
-          audio.current.muted = state !== 'Playing';
-          audio.current.play();
-          setInitialRemainingTime(gameEvent.data.remainingTime);
-          setKey((prevState) => prevState + 1);
-          setPlay(true);
-        }
-      } else if (gameEvent.name === 'answer') {
-        setGameStep(gameEvent.data);
+      } else if (gameEvent.name === 'game:question:init') {
+        const eventData: gameQuestionDataEvent = JSON.parse(gameEvent.data);
+        setHasValidation(false);
+        setAnimeAnswerGood(false);
+        setKindAnswerGood(false);
+        setSongAnswerGood(false);
+        setBandAnswerGood(false);
+        setAnimeAnswer('');
+        setSongAnswer('');
+        setKindAnswer('opening');
+        setBandAnswer('');
+        setGameStep(eventData);
+        audio.current.pause();
+        audio.current.currentTime = 30 - eventData.remainingTime;
+        audio.current.src = 'http://localhost:8080/' + eventData.audioUrl;
+        setDuration(0);
+        audio.current.onloadedmetadata = () => {
+          setDuration(parseInt(audio.current.duration));
+          console.log('duration', parseInt(audio.current.duration));
+        };
+        audio.current.ontimeupdate = () => {
+          setCurrent(parseInt(audio.current.currentTime));
+        };
+        audio.current.muted = state !== 'Playing';
+        audio.current.play();
+        setInitialRemainingTime(eventData.remainingTime);
+        setKey((prevState) => prevState + 1);
+        setPlay(true);
+        setState('Question');
+      } else if (gameEvent.name === 'game:answer') {
+        const eventData: gameAnswerDataEvent = JSON.parse(gameEvent.data);
+        setGameStep(eventData);
         audio.current.pause();
         setInitialRemainingTime(0);
         setKey((prevState) => prevState + 1);
         setPlay(true);
+        setState('Answer');
       } else if (gameEvent.name === 'answerValidation') {
         if (!animeAnswerGood) setAnimeAnswerGood(gameEvent.data.animeResult);
         if (!kindAnswerGood) setKindAnswerGood(gameEvent.data.kindResult);
@@ -135,14 +170,14 @@ function GamePage() {
   const [play, setPlay] = useState(false);
   const [initialRemainingTime, setInitialRemainingTime] = useState(30);
 
-  // if (gameStep.type === '') {
-  //   return <div>Loading...</div>;
-  // }
+  if (state === 'Playing') {
+    return <div>Loading...</div>;
+  }
   return (
     <div className="flex flex-col flex-wrap gap-8 p-2 py-7 sm:mx-auto sm:max-w-7xl sm:p-5">
       <div className="flex flex-col justify-between gap-10 py-2 sm:flex-row">
         <Card title="Game">
-          {state === 'Playing' && (
+          {state !== 'Join' && (
             <>
               <div>
                 Anime {gameStep.index} / {gameStep.songsLength}
@@ -197,8 +232,7 @@ function GamePage() {
                   type="text"
                   id="anime"
                   disabled={
-                    gameStep.type !== 'question' ||
-                    (hasValidation && animeAnswerGood)
+                    state !== 'Question' || (hasValidation && animeAnswerGood)
                   }
                   value={animeAnswer}
                   onChange={(e) => setAnimeAnswer(e.target.value)}
@@ -220,8 +254,7 @@ function GamePage() {
                 <select
                   value={kindAnswer}
                   disabled={
-                    gameStep.type !== 'question' ||
-                    (hasValidation && kindAnswerGood)
+                    state !== 'Question' || (hasValidation && kindAnswerGood)
                   }
                   onChange={(e) => setKindAnswer(e.target.value)}
                   onKeyDown={(e) => {
@@ -246,7 +279,7 @@ function GamePage() {
                 <input
                   type="text"
                   id="song"
-                  disabled={gameStep.type !== 'question'}
+                  disabled={state !== 'Question'}
                   value={songAnswer}
                   onChange={(e) => setSongAnswer(e.target.value)}
                   onKeyDown={(e) => {
@@ -267,7 +300,7 @@ function GamePage() {
                 <input
                   type="text"
                   id="band"
-                  disabled={gameStep.type !== 'question'}
+                  disabled={state !== 'Question'}
                   value={bandAnswer}
                   onChange={(e) => setBandAnswer(e.target.value)}
                   onKeyDown={(e) => {
@@ -281,7 +314,7 @@ function GamePage() {
               <button
                 className="ml-32 w-20 rounded bg-red-600 p-2 text-zinc-200 disabled:opacity-50"
                 onClick={sendAnswer}
-                disabled={gameStep.type !== 'question' || !canAnswer}
+                disabled={state !== 'Question' || !canAnswer}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     sendAnswer();
@@ -291,7 +324,7 @@ function GamePage() {
                 <span>Send</span>
               </button>
               <div className="h-5">
-                {gameStep.type === 'answer' && (
+                {state === 'Answer' && (
                   <span className="text-s">
                     Answer : {gameStep.song.anime} {gameStep.song.name}
                   </span>

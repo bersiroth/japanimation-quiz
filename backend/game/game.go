@@ -91,7 +91,6 @@ type gameStep struct {
 	Players       map[string]Player `json:"players"`
 	Songs         []Song            `json:"songs"`
 	Song          Song              `json:"song"`
-	Type          string            `json:"type"`
 	AudioUrl      string            `json:"audioUrl"`
 	Index         int               `json:"index"`
 	SongsLength   int               `json:"songsLength"`
@@ -111,7 +110,6 @@ func (g *Game) start() {
 		marshal, err := json.Marshal(gameStep{
 			Players:       g.Players,
 			Songs:         g.songs[:g.Index-1],
-			Type:          "question",
 			AudioUrl:      g.Song.AudioUrl,
 			Index:         g.Index,
 			SongsLength:   songsLength,
@@ -132,7 +130,6 @@ func (g *Game) start() {
 			Players:     g.Players,
 			Song:        g.Song,
 			Songs:       g.songs[:g.Index],
-			Type:        "answer",
 			AudioUrl:    g.Song.AudioUrl,
 			Index:       g.Index,
 			SongsLength: songsLength,
@@ -191,7 +188,6 @@ func (g *Game) AddPlayer(name string, client *hub.Client) {
 		marshal, err := json.Marshal(gameStep{
 			Players:       g.Players,
 			Songs:         g.songs[:g.Index-1],
-			Type:          "question",
 			AudioUrl:      g.Song.AudioUrl,
 			Index:         g.Index,
 			SongsLength:   songsLength,
@@ -201,7 +197,7 @@ func (g *Game) AddPlayer(name string, client *hub.Client) {
 			panic(err)
 		}
 		g.gameHub.SendMessageToClient(&hub.Message{
-			MessageName: "game:question:update",
+			MessageName: "game:question:init",
 			JsonData:    marshal,
 		}, client)
 	}
@@ -210,7 +206,6 @@ func (g *Game) AddPlayer(name string, client *hub.Client) {
 			Players:     g.Players,
 			Song:        g.Song,
 			Songs:       g.songs[:g.Index],
-			Type:        "answer",
 			AudioUrl:    g.Song.AudioUrl,
 			Index:       g.Index,
 			SongsLength: songsLength,
@@ -336,7 +331,6 @@ func broadcastGame(g *Game) {
 		step := gameStep{
 			Players:       g.Players,
 			Songs:         g.songs[:g.Index-1],
-			Type:          "question",
 			AudioUrl:      g.Song.AudioUrl,
 			Index:         g.Index,
 			SongsLength:   songsLength,

@@ -2,9 +2,7 @@
 
 ## TODO
 
-- [ ] refactoriser le message game:question:init front
 - [ ] refactoriser le message game:question:update front
-- [ ] refactoriser le message game:answer front
 - [ ] refactoriser le message client:answer front
 - [ ] refactoriser le message client:answer back
 - [ ] refactoriser le message client:answer:validation back
@@ -24,6 +22,8 @@
 - [ ] check unicité du pseudo
 - [ ] avant chaque question verifier s'il y a des joueurs de co sinon passer le jeu en waiting et reset le jeu apres 10min sans joueur
 - [ ] setup un redis pour le cache
+- [x] refactoriser le message game:question:init front
+- [x] refactoriser le message game:answer front
 - [x] refactoriser le message game:answer back
 - [x] refactoriser le message game:question:update back
 - [x] refactoriser le message game:question:init back
