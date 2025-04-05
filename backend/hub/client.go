@@ -190,13 +190,14 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	initCache()
 	ctx := context.Background()
 	var client *Client
-	cachedClientValue, err := marshalerCache.Get(ctx, "clientUuid.String()", new(cachedClient))
+	cachedClientValue, err := marshalerCache.Get(ctx, clientUuid.String(), new(cachedClient))
 	if err != nil && cachedClientValue == nil {
 		client = &Client{Id: clientUuid, Nickname: nickname, hub: hub, conn: conn, Send: make(chan []byte, 256)}
 		log.Println("-- Client not found in cache --")
-		err = marshalerCache.Set(ctx, "clientUuid.String()", client.getCachedClient(), store.WithExpiration(7*24*time.Hour))
+		err = marshalerCache.Set(ctx, clientUuid.String(), client.getCachedClient(), store.WithExpiration(7*24*time.Hour))
 		if err != nil {
-			panic(err)
+			log.Println(err)
+			return
 		}
 	} else {
 		log.Println("-- Client found in cache --")

@@ -3,92 +3,32 @@ import useWebSocket from 'react-use-websocket';
 import Card from '../components/Card.tsx';
 import AnimeCard from '../components/AnimeCard.tsx';
 import { CountdownCircleTimer } from 'react-countdown-circle-timer';
-import Cookies from 'js-cookie';
+import { GameEvent, GameState, useGameStore } from '../stores/gameStore.ts';
 
 function GamePage() {
-  const [gameStep, setGameStep] = useState({
-    players: [] as player[],
-    songs: [] as song[],
-    audioUrl: '',
-    song: {} as song,
-    remainingTime: 30,
-    index: 1,
-    songsLength: 10,
-  });
+  const gameStore = useGameStore();
+
   const [duration, setDuration] = useState(0);
   const [current, setCurrent] = useState(0);
-  const [state, setState] = useState('Join');
-  const [nickname, setNickname] = useState(Cookies.get('nickname'));
+  const [nickname, setNickname] = useState('');
 
   const { lastMessage, sendJsonMessage } = useWebSocket(
     'ws://127.0.0.1:8080/ws/game',
     {
       queryParams: {
-        id: Cookies.get('clientId') ?? '',
-        nickname: nickname ?? '',
+        id: gameStore.me.id ? gameStore.me.id : '',
+        nickname: gameStore.me.nickname ? gameStore.me.nickname : '',
       },
       onOpen: () => console.log('game opened'),
       onError: (event) => console.error('game error', event),
       onClose: () => audio.current.pause(),
     },
-    state !== 'Join'
+    gameStore.state !== GameState.Init
   );
 
-  type GameEvent = {
-    name: string;
-    data: string;
-    sentDate: string;
-    clientId: string;
-  };
-
-  type playerConnectionDataEvent = {
-    id: string;
-    nickname: string;
-  };
-
-  type player = {
-    name: string;
-    score: number;
-    hasAnsweredCorrectly: boolean;
-  };
-
-  type song = {
-    name: string;
-    anime: string;
-    band: string;
-    trackName: string;
-    coverUrl: string;
-    audioUrl: string;
-  };
-
-  type gameQuestionDataEvent = {
-    players: player[];
-    audioUrl: string;
-    song: song;
-    songs: song[];
-    remainingTime: number;
-    index: number;
-    songsLength: number;
-  };
-
-  type gameAnswerDataEvent = {
-    players: player[];
-    audioUrl: string;
-    song: song;
-    songs: song[];
-    remainingTime: number;
-    index: number;
-    songsLength: number;
-  };
-
   useEffect(() => {
-    if (lastMessage !== null) {
-      const gameEvent: GameEvent = JSON.parse(lastMessage.data);
-      if (gameEvent.name === 'player:connection') {
-        const eventData: playerConnectionDataEvent = JSON.parse(gameEvent.data);
-        Cookies.set('clientId', eventData.id);
-      } else if (gameEvent.name === 'game:question:init') {
-        const eventData: gameQuestionDataEvent = JSON.parse(gameEvent.data);
+    switch (gameStore.state) {
+      case GameState.Question:
         setHasValidation(false);
         setAnimeAnswerGood(false);
         setKindAnswerGood(false);
@@ -98,10 +38,9 @@ function GamePage() {
         setSongAnswer('');
         setKindAnswer('opening');
         setBandAnswer('');
-        setGameStep(eventData);
         audio.current.pause();
-        audio.current.currentTime = 30 - eventData.remainingTime;
-        audio.current.src = 'http://localhost:8080/' + eventData.audioUrl;
+        audio.current.currentTime = 30 - gameStore.remainingTime;
+        audio.current.src = 'http://localhost:8080/' + gameStore.audioUrl;
         setDuration(0);
         audio.current.onloadedmetadata = () => {
           setDuration(parseInt(audio.current.duration));
@@ -110,35 +49,37 @@ function GamePage() {
         audio.current.ontimeupdate = () => {
           setCurrent(parseInt(audio.current.currentTime));
         };
-        audio.current.muted = state !== 'Playing';
         audio.current.play();
-        setInitialRemainingTime(eventData.remainingTime);
+        setInitialRemainingTime(gameStore.remainingTime);
         setKey((prevState) => prevState + 1);
         setPlay(true);
-        setState('Question');
-      } else if (gameEvent.name === 'game:answer') {
-        const eventData: gameAnswerDataEvent = JSON.parse(gameEvent.data);
-        setGameStep(eventData);
+        break;
+      case GameState.Answer:
         audio.current.pause();
         setInitialRemainingTime(0);
         setKey((prevState) => prevState + 1);
         setPlay(true);
-        setState('Answer');
-      } else if (gameEvent.name === 'answerValidation') {
-        if (!animeAnswerGood) setAnimeAnswerGood(gameEvent.data.animeResult);
-        if (!kindAnswerGood) setKindAnswerGood(gameEvent.data.kindResult);
-        if (!songAnswerGood) setSongAnswerGood(gameEvent.data.songResult);
-        if (!bandAnswerGood) setBandAnswerGood(gameEvent.data.bandResult);
-        setHasValidation(true);
-      } else if (gameEvent.name === 'player') {
-        setPlayerId(gameEvent.data.id);
-      }
+        break;
+    }
+  }, [gameStore.state]);
+
+  useEffect(() => {
+    if (lastMessage !== null) {
+      const gameEvent: GameEvent = JSON.parse(lastMessage.data);
+      gameStore.handleServerMessage(gameEvent);
+      // if (gameEvent.name === 'answerValidation') {
+      //   if (!animeAnswerGood) setAnimeAnswerGood(gameEvent.data.animeResult);
+      //   if (!kindAnswerGood) setKindAnswerGood(gameEvent.data.kindResult);
+      //   if (!songAnswerGood) setSongAnswerGood(gameEvent.data.songResult);
+      //   if (!bandAnswerGood) setBandAnswerGood(gameEvent.data.bandResult);
+      //   setHasValidation(true);
+      // } else if (gameEvent.name === 'player') {
+      //   setPlayerId(gameEvent.data.id);
+      // }
     }
   }, [lastMessage]);
 
   const audio = useRef(new Audio());
-
-  const [playerId, setPlayerId] = useState('');
 
   const [animeAnswer, setAnimeAnswer] = useState('');
   const [kindAnswer, setKindAnswer] = useState('opening');
@@ -161,8 +102,14 @@ function GamePage() {
       song: hasValidation && songAnswerGood ? '' : songAnswer,
       band: hasValidation && bandAnswerGood ? '' : bandAnswer,
     };
+    const message = {
+      name: 'game:answer',
+      data: JSON.stringify(answer),
+      sentDate: new Date().toISOString(),
+      clientId: gameStore.me.id,
+    };
     setCanAnswer(false);
-    sendJsonMessage(answer);
+    sendJsonMessage(message);
     setTimeout(() => setCanAnswer(true), 1000);
   }
 
@@ -170,18 +117,16 @@ function GamePage() {
   const [play, setPlay] = useState(false);
   const [initialRemainingTime, setInitialRemainingTime] = useState(30);
 
-  if (state === 'Playing') {
+  if (gameStore.state === GameState.Waiting) {
     return <div>Loading...</div>;
   }
   return (
     <div className="flex flex-col flex-wrap gap-8 p-2 py-7 sm:mx-auto sm:max-w-7xl sm:p-5">
       <div className="flex flex-col justify-between gap-10 py-2 sm:flex-row">
         <Card title="Game">
-          {state !== 'Join' && (
+          {gameStore.state !== GameState.Init && (
             <>
-              <div>
-                Anime {gameStep.index} / {gameStep.songsLength}
-              </div>
+              <div>{/*Anime {gameStep.index} / {gameStep.songsLength}*/}</div>
               <div className="flex justify-center pb-10">
                 <CountdownCircleTimer
                   isPlaying={play}
@@ -232,7 +177,8 @@ function GamePage() {
                   type="text"
                   id="anime"
                   disabled={
-                    state !== 'Question' || (hasValidation && animeAnswerGood)
+                    gameStore.state !== GameState.Question ||
+                    (hasValidation && animeAnswerGood)
                   }
                   value={animeAnswer}
                   onChange={(e) => setAnimeAnswer(e.target.value)}
@@ -254,7 +200,8 @@ function GamePage() {
                 <select
                   value={kindAnswer}
                   disabled={
-                    state !== 'Question' || (hasValidation && kindAnswerGood)
+                    gameStore.state !== GameState.Question ||
+                    (hasValidation && kindAnswerGood)
                   }
                   onChange={(e) => setKindAnswer(e.target.value)}
                   onKeyDown={(e) => {
@@ -279,7 +226,7 @@ function GamePage() {
                 <input
                   type="text"
                   id="song"
-                  disabled={state !== 'Question'}
+                  disabled={gameStore.state !== GameState.Question}
                   value={songAnswer}
                   onChange={(e) => setSongAnswer(e.target.value)}
                   onKeyDown={(e) => {
@@ -300,7 +247,7 @@ function GamePage() {
                 <input
                   type="text"
                   id="band"
-                  disabled={state !== 'Question'}
+                  disabled={gameStore.state !== GameState.Question}
                   value={bandAnswer}
                   onChange={(e) => setBandAnswer(e.target.value)}
                   onKeyDown={(e) => {
@@ -314,7 +261,7 @@ function GamePage() {
               <button
                 className="ml-32 w-20 rounded bg-red-600 p-2 text-zinc-200 disabled:opacity-50"
                 onClick={sendAnswer}
-                disabled={state !== 'Question' || !canAnswer}
+                disabled={gameStore.state !== GameState.Question || !canAnswer}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     sendAnswer();
@@ -324,15 +271,15 @@ function GamePage() {
                 <span>Send</span>
               </button>
               <div className="h-5">
-                {state === 'Answer' && (
+                {gameStore.state === GameState.Answer && (
                   <span className="text-s">
-                    Answer : {gameStep.song.anime} {gameStep.song.name}
+                    Answer : {gameStore.song.anime} {gameStore.song.name}
                   </span>
                 )}
               </div>
             </>
           )}
-          {state === 'Join' && !Cookies.get('nickname') && (
+          {gameStore.state === GameState.Init && !gameStore.me.nickname && (
             <>
               <div className="flex flex-row gap-4 pb-3">
                 <label htmlFor="nickname" className={`w-28 p-1 text-right`}>
@@ -342,12 +289,13 @@ function GamePage() {
                   type="text"
                   id="nickname"
                   value={nickname}
-                  disabled={Cookies.get('nickname')}
                   onChange={(e) => setNickname(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      Cookies.set('nickname', nickname);
-                      setState('Playing');
+                      if (nickname.length > 0) {
+                        gameStore.me.nickname = nickname;
+                        gameStore.setState(GameState.Waiting);
+                      }
                     }
                   }}
                   className={`w-2/3 rounded-md border border-slate-200 p-1 shadow-sm hover:border-slate-300 focus:border-slate-400 focus:shadow focus:outline-none`}
@@ -356,18 +304,20 @@ function GamePage() {
               <button
                 className="rounded bg-red-600 p-2 text-zinc-200"
                 onClick={() => {
-                  Cookies.set('nickname', nickname);
-                  setState('Playing');
+                  if (nickname.length > 0) {
+                    gameStore.me.nickname = nickname;
+                    gameStore.setState(GameState.Waiting);
+                  }
                 }}
               >
                 JOIN GAME
               </button>
             </>
           )}
-          {state === 'Join' && Cookies.get('nickname') && (
+          {gameStore.state === GameState.Init && gameStore.me.nickname && (
             <>
               <div className="flex justify-center">
-                Hello {Cookies.get('nickname')} !
+                Hello {gameStore.me.nickname} !
               </div>
               <div className="flex justify-center pb-5">
                 Would you like to play ?
@@ -375,7 +325,7 @@ function GamePage() {
               <button
                 className="rounded bg-red-600 p-2 text-zinc-200"
                 onClick={() => {
-                  setState('Playing');
+                  gameStore.setState(GameState.Waiting);
                 }}
               >
                 JOIN GAME
@@ -384,35 +334,35 @@ function GamePage() {
           )}
         </Card>
         <Card title="Player">
-          {Object.entries(gameStep.players).map(
-            ([id, player]: [string, object]) => {
-              return (
-                <div
-                  key={id}
-                  className={`text-s flex flex-row ${player.hasAnsweredCorrectly ? 'text-green-500' : ''} ${id === playerId ? 'bg-red-300/20' : ''} mb-2 border-b-2 border-red-900 p-2`}
-                >
-                  <div className="w-4/5">{player.name}</div>
-                  <div>{player.score} Pts</div>
-                </div>
-              );
-            }
-          )}
+          {/*{Object.entries(gameStep.players).map(*/}
+          {/*  ([id, player]: [string, object]) => {*/}
+          {/*    return (*/}
+          {/*      <div*/}
+          {/*        key={id}*/}
+          {/*        className={`text-s flex flex-row ${player.hasAnsweredCorrectly ? 'text-green-500' : ''} ${id === playerId ? 'bg-red-300/20' : ''} mb-2 border-b-2 border-red-900 p-2`}*/}
+          {/*      >*/}
+          {/*        <div className="w-4/5">{player.name}</div>*/}
+          {/*        <div>{player.score} Pts</div>*/}
+          {/*      </div>*/}
+          {/*    );*/}
+          {/*  }*/}
+          {/*)}*/}
         </Card>
       </div>
       <Card title="Last answers">
         <div className="flex flex-col gap-2">
           <div className="flex flex-col flex-wrap gap-2 md:flex-row">
-            {gameStep.songs?.map((animeSong, index) => (
-              <AnimeCard
-                key={index}
-                hiddenLg={index === 3}
-                hiddenXl={index > 3}
-                animeSong={animeSong}
-                withButton={false}
-                withText={false}
-                small={true}
-              />
-            ))}
+            {/*{gameStep.songs?.map((animeSong, index) => (*/}
+            {/*  <AnimeCard*/}
+            {/*    key={index}*/}
+            {/*    hiddenLg={index === 3}*/}
+            {/*    hiddenXl={index > 3}*/}
+            {/*    animeSong={animeSong}*/}
+            {/*    withButton={false}*/}
+            {/*    withText={false}*/}
+            {/*    small={true}*/}
+            {/*  />*/}
+            {/*))}*/}
           </div>
         </div>
       </Card>
