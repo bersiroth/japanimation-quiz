@@ -241,87 +241,73 @@ func (g *Game) RemovePlayer(id uuid.UUID) {
 }
 
 type clientAnswer struct {
-	Type  string `json:"type"`
 	Anime string `json:"anime"`
 	Kind  string `json:"kind"`
 	Song  string `json:"song"`
 	Band  string `json:"band"`
 }
 type serverAnswer struct {
-	Type        string `json:"type"`
-	AnimeResult bool   `json:"animeResult"`
-	KindResult  bool   `json:"kindResult"`
-	SongResult  bool   `json:"songResult"`
-	BandResult  bool   `json:"bandResult"`
+	AnimeResult bool `json:"animeResult"`
+	KindResult  bool `json:"kindResult"`
+	SongResult  bool `json:"songResult"`
+	BandResult  bool `json:"bandResult"`
 }
 
-func (g *Game) HandleClientMessage(client *hub.Client, message []byte) {
-	var a clientAnswer
-	var s serverAnswer
-	s.Type = "answerValidation"
-	if err := json.Unmarshal(message, &a); err != nil {
+func (g *Game) HandleClientMessage(client *hub.Client, message hub.Message) {
+	if message.MessageName == "client:answer" {
+		g.handleClientAnswerMessage(client, message.JsonData)
+	}
+}
+
+func (g *Game) handleClientAnswerMessage(client *hub.Client, messageJsonData json.RawMessage) {
+	// Parse the client answer
+	var clientAnswer clientAnswer
+	if err := json.Unmarshal(messageJsonData, &clientAnswer); err != nil {
 		panic(err)
 	}
 
-	log.Println(g.Song.Anime, a.Anime)
-	if a.Anime == g.Song.Anime {
-		log.Println("Good anime answer")
-		player := g.Players[client.Id.String()]
-		player.Score++
+	// Initialize server answer
+	var serverAnswer serverAnswer
+	playerId := client.Id.String()
+	player := g.Players[playerId]
+
+	// Helper function to process each answer
+	processAnswer := func(correctValue string, givenValue string, onCorrect func(), resultSetter *bool) {
+		log.Println(correctValue, givenValue)
+		if correctValue == givenValue {
+			log.Println("Good answer")
+			player.Score++
+			onCorrect()
+			*resultSetter = true
+		} else {
+			log.Println("Bad answer")
+			*resultSetter = false
+		}
+	}
+
+	// Evaluate answers and update results
+	processAnswer(g.Song.Anime, clientAnswer.Anime, func() {
 		player.HasAnsweredCorrectly = true
-		g.Players[client.Id.String()] = player
-		s.AnimeResult = true
-	} else {
-		log.Println("Bad anime answer")
-		s.AnimeResult = false
-	}
+	}, &serverAnswer.AnimeResult)
 
-	log.Println(string(g.Song.Kind), a.Kind)
-	if a.Kind == string(g.Song.Kind) {
-		log.Println("Good kind answer")
-		player := g.Players[client.Id.String()]
-		player.Score++
-		g.Players[client.Id.String()] = player
-		s.KindResult = true
-	} else {
-		log.Println("Bad kind answer")
-		s.KindResult = false
-	}
+	processAnswer(string(g.Song.Kind), clientAnswer.Kind, func() {}, &serverAnswer.KindResult)
+	processAnswer(g.Song.Name, clientAnswer.Song, func() {}, &serverAnswer.SongResult)
+	processAnswer(g.Song.Band, clientAnswer.Band, func() {}, &serverAnswer.BandResult)
 
-	log.Println(g.Song.Name, a.Song)
-	if a.Song == g.Song.Name {
-		log.Println("Good song answer")
-		player := g.Players[client.Id.String()]
-		player.Score++
-		g.Players[client.Id.String()] = player
-		s.SongResult = true
-	} else {
-		log.Println("Bad song answer")
-		s.SongResult = false
-	}
+	// Save the updated player back to the game
+	g.Players[playerId] = player
 
-	log.Println(g.Song.Band, a.Band)
-	if a.Band == g.Song.Band {
-		log.Println("Good band answer")
-		player := g.Players[client.Id.String()]
-		player.Score++
-		g.Players[client.Id.String()] = player
-		s.BandResult = true
-	} else {
-		log.Println("Bad band answer")
-		s.BandResult = false
-	}
-
-	marshal, err := json.Marshal(s)
+	// Marshal the server answer and send it to the client
+	marshaledAnswer, err := json.Marshal(serverAnswer)
 	if err != nil {
 		panic(err)
 	}
-
 	g.gameHub.SendMessageToClient(&hub.Message{
 		MessageName: "game:validation",
-		JsonData:    marshal,
+		JsonData:    marshaledAnswer,
 	}, client)
 
+	// Broadcast the game state
 	go broadcastGame(g)
 }
 

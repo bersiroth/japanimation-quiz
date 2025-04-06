@@ -7,6 +7,7 @@ package hub
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/dgraph-io/ristretto"
 	"github.com/eko/gocache/lib/v4/cache"
@@ -57,9 +58,21 @@ type Client struct {
 	Send chan []byte
 }
 
+type FormatedMessage struct {
+	Name     string `json:"name"`
+	Data     string `json:"data"`
+	SentDate string `json:"sentDate"`
+	ClientId string `json:"clientId"`
+}
+
+type Message struct {
+	MessageName string
+	JsonData    json.RawMessage
+}
+
 type ClientMessage struct {
 	Client  *Client
-	Message []byte
+	Message Message
 }
 
 type cachedClient struct {
@@ -97,9 +110,17 @@ func (c *Client) readPump() {
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		log.Println("Message received: ", string(message))
+		var fm FormatedMessage
+		err = json.Unmarshal(message, &fm)
+		if err != nil {
+			panic(err)
+		}
 		c.hub.read <- &ClientMessage{
-			Client:  c,
-			Message: message,
+			Client: c,
+			Message: Message{
+				MessageName: fm.Name,
+				JsonData:    json.RawMessage(fm.Data),
+			},
 		}
 	}
 }

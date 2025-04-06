@@ -1,8 +1,8 @@
 import { GameEvent, GameStatus, useGameStore } from '../stores/gameStore.ts';
 import { useEffect, useRef, useState } from 'react';
-import { CountdownCircleTimer } from 'react-countdown-circle-timer';
 import useWebSocket from 'react-use-websocket';
 import GameInput from './GameInput.tsx';
+import GameCountdown from './GameCountdown.tsx';
 
 function GameState() {
   const gameStore = useGameStore();
@@ -19,6 +19,7 @@ function GameState() {
       onClose: () => audio.current.pause(),
       onMessage: (event: MessageEvent<string>) => {
         const gameEvent: GameEvent = JSON.parse(event.data) as GameEvent;
+        console.log('game event', gameEvent);
         gameStore.handleServerMessage(gameEvent);
       },
     },
@@ -28,11 +29,7 @@ function GameState() {
   useEffect(() => {
     switch (gameStore.state) {
       case GameStatus.Question: {
-        gameStore.setHasValidation(false);
-        setAnimeAnswerGood(false);
-        setKindAnswerGood(false);
-        setSongAnswerGood(false);
-        setBandAnswerGood(false);
+        gameStore.resetAnswers();
         setAnimeAnswer('');
         setSongAnswer('');
         setKindAnswer('opening');
@@ -58,33 +55,12 @@ function GameState() {
     }
   }, [gameStore.state]);
 
-  // useEffect(() => {
-  //   if (lastMessage !== null) {
-  //     const gameEvent: GameEvent = JSON.parse(lastMessage.data);
-  //     gameStore.handleServerMessage(gameEvent);
-  // if (gameEvent.name === 'answerValidation') {
-  //   if (!animeAnswerGood) setAnimeAnswerGood(gameEvent.data.animeResult);
-  //   if (!kindAnswerGood) setKindAnswerGood(gameEvent.data.kindResult);
-  //   if (!songAnswerGood) setSongAnswerGood(gameEvent.data.songResult);
-  //   if (!bandAnswerGood) setBandAnswerGood(gameEvent.data.bandResult);
-  //   setHasValidation(true);
-  // } else if (gameEvent.name === 'player') {
-  //   setPlayerId(gameEvent.data.id);
-  // }
-  //   }
-  // }, [lastMessage]);
-
   const audio = useRef(new Audio());
 
   const [animeAnswer, setAnimeAnswer] = useState('');
   const [kindAnswer, setKindAnswer] = useState('opening');
   const [songAnswer, setSongAnswer] = useState('');
   const [bandAnswer, setBandAnswer] = useState('');
-  const [animeAnswerGood, setAnimeAnswerGood] = useState(false);
-  const [kindAnswerGood, setKindAnswerGood] = useState(false);
-  const [songAnswerGood, setSongAnswerGood] = useState(false);
-  const [bandAnswerGood, setBandAnswerGood] = useState(false);
-  // const [hasValidation, setHasValidation] = useState(false);
 
   const [key, setKey] = useState(0);
   const [play, setPlay] = useState(false);
@@ -95,14 +71,13 @@ function GameState() {
       return;
     }
     const answer = {
-      type: 'answer',
-      anime: gameStore.hasValidation && animeAnswerGood ? '' : animeAnswer,
-      kind: gameStore.hasValidation && kindAnswerGood ? 'other' : kindAnswer,
-      song: gameStore.hasValidation && songAnswerGood ? '' : songAnswer,
-      band: gameStore.hasValidation && bandAnswerGood ? '' : bandAnswer,
+      anime: gameStore.animeAnswerGood ? '' : animeAnswer,
+      kind: gameStore.kindAnswerGood ? 'other' : kindAnswer,
+      song: gameStore.songAnswerGood ? '' : songAnswer,
+      band: gameStore.bandAnswerGood ? '' : bandAnswer,
     };
     const message = {
-      name: 'game:answer',
+      name: 'client:answer',
       data: JSON.stringify(answer),
       sentDate: new Date().toISOString(),
       clientId: gameStore.me.id,
@@ -120,54 +95,27 @@ function GameState() {
 
   return (
     <>
-      <div>{/*Anime {gameStep.index} / {gameStep.songsLength}*/}</div>
-      <div className="flex justify-center pb-10">
-        <CountdownCircleTimer
-          isPlaying={play}
-          key={key}
-          duration={30}
-          colors={['#93b62b', '#ffc211', '#f7941c', '#c9171c']}
-          colorsTime={[30, 18, 9, 0]}
-          size={200}
-          strokeWidth={20}
-          initialRemainingTime={initialRemainingTime}
-          isSmoothColorTransition={true}
-        >
-          {({ remainingTime, color }) => {
-            let content;
-            if (remainingTime === 0) {
-              audio.current.pause();
-              content = (
-                <>
-                  <div>Time&#39;s</div>
-                  <div>up!</div>
-                </>
-              );
-            } else {
-              content = <span className="text-6xl">{remainingTime}</span>;
-            }
-
-            return (
-              <div
-                className="flex flex-col items-center text-xl"
-                style={{ color: color }}
-              >
-                {content}
-              </div>
-            );
-          }}
-        </CountdownCircleTimer>
+      <div>
+        Anime {gameStore.index} / {gameStore.songsLength}
       </div>
+      <GameCountdown
+        isPlaying={play}
+        key={key}
+        initialRemainingTime={initialRemainingTime}
+        callback={() => audio.current.pause()}
+      />
       <GameInput
         name="anime"
         label="Anime"
         value={animeAnswer}
         onChange={setAnimeAnswer}
         onSubmit={sendAnswer}
-        answerGood={animeAnswerGood}
+        answerGood={gameStore.animeAnswerGood}
         hasValidation={gameStore.hasValidation}
         isDisabled={
-          gameStore.state !== GameStatus.Question || !gameStore.canAnswer
+          gameStore.state !== GameStatus.Question ||
+          !gameStore.canAnswer ||
+          gameStore.animeAnswerGood
         }
       />
       <GameInput
@@ -178,10 +126,12 @@ function GameState() {
         value={kindAnswer}
         onChange={setKindAnswer}
         onSubmit={sendAnswer}
-        answerGood={kindAnswerGood}
+        answerGood={gameStore.kindAnswerGood}
         hasValidation={gameStore.hasValidation}
         isDisabled={
-          gameStore.state !== GameStatus.Question || !gameStore.canAnswer
+          gameStore.state !== GameStatus.Question ||
+          !gameStore.canAnswer ||
+          gameStore.kindAnswerGood
         }
       />
       <GameInput
@@ -190,10 +140,12 @@ function GameState() {
         value={songAnswer}
         onChange={setSongAnswer}
         onSubmit={sendAnswer}
-        answerGood={songAnswerGood}
+        answerGood={gameStore.songAnswerGood}
         hasValidation={gameStore.hasValidation}
         isDisabled={
-          gameStore.state !== GameStatus.Question || !gameStore.canAnswer
+          gameStore.state !== GameStatus.Question ||
+          !gameStore.canAnswer ||
+          gameStore.songAnswerGood
         }
       />
       <GameInput
@@ -202,10 +154,12 @@ function GameState() {
         value={bandAnswer}
         onChange={setBandAnswer}
         onSubmit={sendAnswer}
-        answerGood={bandAnswerGood}
+        answerGood={gameStore.bandAnswerGood}
         hasValidation={gameStore.hasValidation}
         isDisabled={
-          gameStore.state !== GameStatus.Question || !gameStore.canAnswer
+          gameStore.state !== GameStatus.Question ||
+          !gameStore.canAnswer ||
+          gameStore.bandAnswerGood
         }
       />
       <button

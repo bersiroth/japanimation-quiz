@@ -45,6 +45,13 @@ interface gameDataEvent {
   songsLength: number;
 }
 
+interface answerValidationEvent {
+  animeResult: boolean;
+  kindResult: boolean;
+  songResult: boolean;
+  bandResult: boolean;
+}
+
 interface me {
   id: string;
   nickname: string;
@@ -62,6 +69,10 @@ interface GameStoreState {
   songsLength: number;
   canAnswer: boolean;
   hasValidation: boolean;
+  animeAnswerGood: boolean;
+  kindAnswerGood: boolean;
+  songAnswerGood: boolean;
+  bandAnswerGood: boolean;
 }
 
 interface GameStoreAction {
@@ -70,11 +81,12 @@ interface GameStoreAction {
   setCanAnswer: (canAnswer: boolean) => void;
   setHasValidation: (hasValidation: boolean) => void;
   handleServerMessage: (gameEvent: GameEvent) => void;
+  resetAnswers: () => void;
 }
 
 type GameStore = GameStoreState & GameStoreAction;
 
-export const useGameStore = create<GameStore>((set) => ({
+export const useGameStore = create<GameStore>((set, get) => ({
   state: GameStatus.Init,
   me: !Cookies.get('player')
     ? ({} as me)
@@ -95,6 +107,10 @@ export const useGameStore = create<GameStore>((set) => ({
   songsLength: 0,
   canAnswer: true,
   hasValidation: false,
+  animeAnswerGood: false,
+  kindAnswerGood: false,
+  songAnswerGood: false,
+  bandAnswerGood: false,
   setState: (gameState) => set({ state: gameState }),
   setNickname: (nickname) => set({ me: { nickname: nickname } as me }),
   setCanAnswer: (canAnswer) => set({ canAnswer: canAnswer }),
@@ -110,6 +126,13 @@ export const useGameStore = create<GameStore>((set) => ({
       };
       Cookies.set('player', JSON.stringify(me));
       set({ me: me });
+    } else if (gameEvent.name === 'game:question:update') {
+      const eventData: gameDataEvent = JSON.parse(
+        gameEvent.data
+      ) as gameDataEvent;
+      set({
+        players: eventData.players,
+      });
     } else if (gameEvent.name === 'game:question:init') {
       const eventData: gameDataEvent = JSON.parse(
         gameEvent.data
@@ -123,6 +146,17 @@ export const useGameStore = create<GameStore>((set) => ({
         remainingTime: eventData.remainingTime,
         index: eventData.index,
         songsLength: eventData.songsLength,
+      });
+    } else if (gameEvent.name === 'game:validation') {
+      const eventData: answerValidationEvent = JSON.parse(
+        gameEvent.data
+      ) as answerValidationEvent;
+      set({
+        hasValidation: true,
+        animeAnswerGood: get().animeAnswerGood || eventData.animeResult,
+        kindAnswerGood: get().kindAnswerGood || eventData.kindResult,
+        songAnswerGood: get().songAnswerGood || eventData.songResult,
+        bandAnswerGood: get().bandAnswerGood || eventData.bandResult,
       });
     } else if (gameEvent.name === 'game:answer') {
       const eventData: gameDataEvent = JSON.parse(
@@ -138,6 +172,16 @@ export const useGameStore = create<GameStore>((set) => ({
         index: eventData.index,
         songsLength: eventData.songsLength,
       });
+    } else {
+      console.warn('Unknown event name:', gameEvent.name);
     }
   },
+  resetAnswers: () =>
+    set({
+      animeAnswerGood: false,
+      kindAnswerGood: false,
+      songAnswerGood: false,
+      bandAnswerGood: false,
+      hasValidation: false,
+    }),
 }));

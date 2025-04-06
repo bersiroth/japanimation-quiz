@@ -2,17 +2,13 @@
 
 ## TODO
 
-- [ ] ajouter un store global game en front
-- [ ] refactoriser le message game:question:update front
-- [ ] refactoriser le message client:answer front
-- [ ] refactoriser le message client:answer back
-- [ ] refactoriser le message client:answer:validation back
-- [ ] refactoriser le message client:answer:validation front
 - [ ] refactoriser le message game:ending back
 - [ ] refactoriser le message game:ending front
+- [ ] refactoriser la home page front
 - [ ] fusionner les states, answerGood, answer, audio, client (id, nickname)
 - [ ] trim + full minuscule sur la comparaison entre la proposition de réponse et la réponse (faire un contains a la place du égal pour la comparaison ?)
 - [ ] 1 point pour l'anime + 1 bonus en plus (dans le cas anime + autre bonne reponse)
+- [ ] flagger le premier, le second, le troisième a trouver la réponse pour l'anime
 - [ ] a l'init de la game faire le découpage des musiques pour avoir 30s random
 - [ ] au moment du résultat jouer la vidéo de la réponse
 - [ ] afficher les régles sur la page de jeu
@@ -21,8 +17,15 @@
 - [ ] faire le design de la page d'accueil
 - [ ] faire une save state du jeu pour relancer en cas de crash
 - [ ] check unicité du pseudo
+- [ ] update du pseudo possible tout les X temps
 - [ ] avant chaque question verifier s'il y a des joueurs de co sinon passer le jeu en waiting et reset le jeu apres 10min sans joueur
 - [ ] setup un redis pour le cache
+- [x] refactoriser le message client:answer front
+- [x] refactoriser le message client:answer back
+- [x] refactoriser le message client:answer:validation back
+- [x] refactoriser le message client:answer:validation front
+- [x] refactoriser le message game:question:update front
+- [x] ajouter un store global game en front
 - [x] refactoriser le message game:question:init front
 - [x] refactoriser le message game:answer front
 - [x] refactoriser le message game:answer back

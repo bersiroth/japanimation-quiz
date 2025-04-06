@@ -9,11 +9,6 @@ import (
 	"time"
 )
 
-type Message struct {
-	MessageName string
-	JsonData    json.RawMessage
-}
-
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
@@ -48,16 +43,9 @@ type ConnexionMessage struct {
 	Nickname string `json:"nickname"`
 }
 
-type formatedMessage struct {
-	Name     string `json:"name"`
-	Data     string `json:"data"`
-	SentDate string `json:"sentDate"`
-	ClientId string `json:"clientId"`
-}
-
 func (h *Hub) SendMessageToClient(message *Message, client *Client) {
 	marshal, err := json.Marshal(
-		formatedMessage{
+		FormatedMessage{
 			Name:     message.MessageName,
 			Data:     string(message.JsonData),
 			SentDate: time.Now().String(),
