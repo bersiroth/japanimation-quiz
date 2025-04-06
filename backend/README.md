@@ -2,6 +2,7 @@
 
 ## TODO
 
+- [ ] ajouter un store global game en front
 - [ ] refactoriser le message game:question:update front
 - [ ] refactoriser le message client:answer front
 - [ ] refactoriser le message client:answer back

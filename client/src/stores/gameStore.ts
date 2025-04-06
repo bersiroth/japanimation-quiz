@@ -1,41 +1,41 @@
 import { create } from 'zustand';
 import Cookies from 'js-cookie';
 
-export enum GameState {
+export enum GameStatus {
   Init,
   Waiting,
   Question,
   Answer,
 }
 
-export type GameEvent = {
+export interface GameEvent {
   name: string;
   data: string;
   sentDate: string;
   clientId: string;
-};
+}
 
-type playerConnectionDataEvent = {
+interface playerConnectionDataEvent {
   id: string;
   nickname: string;
-};
+}
 
-type player = {
+export interface player {
   name: string;
   score: number;
   hasAnsweredCorrectly: boolean;
-};
+}
 
-type song = {
+interface song {
   name: string;
   anime: string;
   band: string;
   trackName: string;
   coverUrl: string;
   audioUrl: string;
-};
+}
 
-type gameDataEvent = {
+interface gameDataEvent {
   players: player[];
   audioUrl: string;
   song: song;
@@ -43,15 +43,15 @@ type gameDataEvent = {
   remainingTime: number;
   index: number;
   songsLength: number;
-};
+}
 
-type me = {
+interface me {
   id: string;
   nickname: string;
-};
+}
 
-type GameStoreState = {
-  state: GameState;
+interface GameStoreState {
+  state: GameStatus;
   me: me;
   players: player[];
   audioUrl: string;
@@ -60,20 +60,25 @@ type GameStoreState = {
   remainingTime: number;
   index: number;
   songsLength: number;
-};
+  canAnswer: boolean;
+  hasValidation: boolean;
+}
 
-type GameStoreAction = {
-  setState: (gameState: GameState) => void;
+interface GameStoreAction {
+  setState: (gameState: GameStatus) => void;
+  setNickname: (nickname: string) => void;
+  setCanAnswer: (canAnswer: boolean) => void;
+  setHasValidation: (hasValidation: boolean) => void;
   handleServerMessage: (gameEvent: GameEvent) => void;
-};
+}
 
 type GameStore = GameStoreState & GameStoreAction;
 
-export const useGameStore = create<GameStore>((set, get) => ({
-  state: GameState.Init,
+export const useGameStore = create<GameStore>((set) => ({
+  state: GameStatus.Init,
   me: !Cookies.get('player')
     ? ({} as me)
-    : JSON.parse(Cookies.get('player') as string),
+    : (JSON.parse(Cookies.get('player')!) as me),
   players: [],
   audioUrl: '',
   song: {
@@ -88,10 +93,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
   remainingTime: 0,
   index: 0,
   songsLength: 0,
+  canAnswer: true,
+  hasValidation: false,
   setState: (gameState) => set({ state: gameState }),
+  setNickname: (nickname) => set({ me: { nickname: nickname } as me }),
+  setCanAnswer: (canAnswer) => set({ canAnswer: canAnswer }),
+  setHasValidation: (hasValidation) => set({ hasValidation: hasValidation }),
   handleServerMessage: (gameEvent) => {
     if (gameEvent.name === 'player:connection') {
-      const eventData: playerConnectionDataEvent = JSON.parse(gameEvent.data);
+      const eventData: playerConnectionDataEvent = JSON.parse(
+        gameEvent.data
+      ) as playerConnectionDataEvent;
       const me: me = {
         id: eventData.id,
         nickname: eventData.nickname,
@@ -99,9 +111,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       Cookies.set('player', JSON.stringify(me));
       set({ me: me });
     } else if (gameEvent.name === 'game:question:init') {
-      const eventData: gameDataEvent = JSON.parse(gameEvent.data);
+      const eventData: gameDataEvent = JSON.parse(
+        gameEvent.data
+      ) as gameDataEvent;
       set({
-        state: GameState.Question,
+        state: GameStatus.Question,
         players: eventData.players,
         audioUrl: eventData.audioUrl,
         song: eventData.song,
@@ -111,9 +125,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
         songsLength: eventData.songsLength,
       });
     } else if (gameEvent.name === 'game:answer') {
-      const eventData: gameDataEvent = JSON.parse(gameEvent.data);
+      const eventData: gameDataEvent = JSON.parse(
+        gameEvent.data
+      ) as gameDataEvent;
       set({
-        state: GameState.Answer,
+        state: GameStatus.Answer,
         players: eventData.players,
         audioUrl: eventData.audioUrl,
         song: eventData.song,

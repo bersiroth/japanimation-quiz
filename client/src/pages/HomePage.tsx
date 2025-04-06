@@ -4,20 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card.tsx';
 import AnimeCard from '../components/AnimeCard.tsx';
 
-enum AnimeSongType {
-  opening = 'Opening',
-  ending = 'Ending',
-  insert = 'Insert',
-}
-export type AnimeSong = {
+export interface AnimeSong {
   anime: string;
-  kind: AnimeSongType;
   position?: number;
   trackName: string;
   band: string;
   name: string;
   coverUrl: string;
-};
+}
 
 function HomePage() {
   const [game, setGame] = useState({
