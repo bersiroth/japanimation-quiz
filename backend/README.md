@@ -2,13 +2,13 @@
 
 ## TODO
 
-- [ ] refactoriser le message game:ending back
-- [ ] refactoriser le message game:ending front
 - [ ] refactoriser la home page front
+- [ ] déployer
 - [ ] fusionner les states, answerGood, answer, audio, client (id, nickname)
 - [ ] trim + full minuscule sur la comparaison entre la proposition de réponse et la réponse (faire un contains a la place du égal pour la comparaison ?)
 - [ ] 1 point pour l'anime + 1 bonus en plus (dans le cas anime + autre bonne reponse)
 - [ ] flagger le premier, le second, le troisième a trouver la réponse pour l'anime
+- [ ] gérer le message game:ending front / back
 - [ ] a l'init de la game faire le découpage des musiques pour avoir 30s random
 - [ ] au moment du résultat jouer la vidéo de la réponse
 - [ ] afficher les régles sur la page de jeu

@@ -47,8 +47,22 @@ function HomePage() {
     songsLength: 5,
   });
   const [stats, setStats] = useState({
-    topActivePlayers: [],
-    topPlayers: [],
+    topActivePlayers: [
+      {
+        player: {
+          name: 'Joueur 1',
+        },
+        score: 0,
+      },
+    ],
+    topPlayers: [
+      {
+        player: {
+          name: 'Joueur 1',
+        },
+        score: 0,
+      },
+    ],
   });
 
   const { lastMessage } = useWebSocket('ws://localhost:8080/ws/stats', {
@@ -57,10 +71,57 @@ function HomePage() {
   });
   useEffect(() => {
     if (lastMessage !== null) {
-      const data = JSON.parse(lastMessage.data);
-      setGame(data.gameStats);
-      setStats(data.topStats);
-      setLastGame(data.lastGame);
+      // const data = JSON.parse(lastMessage.data);
+      setGame({
+        players: [],
+        songs: [
+          {
+            name: 'Opening 1',
+            trackName: 'R★O★C★K★S',
+            band: 'HOUND DOG',
+            anime: 'Naruto',
+            kind: 'opening',
+            coverUrl: 'static/naruto/opening-1.jpg',
+          },
+        ],
+        index: 1,
+        state: 'waiting',
+        songsLength: 5,
+      });
+      setStats({
+        topActivePlayers: [
+          {
+            player: {
+              name: 'Joueur 1',
+            },
+            score: 0,
+          },
+        ],
+        topPlayers: [
+          {
+            player: {
+              name: 'Joueur 1',
+            },
+            score: 0,
+          },
+        ],
+      });
+      setLastGame({
+        players: [],
+        songs: [
+          {
+            name: 'Opening 1',
+            trackName: 'R★O★C★K★S',
+            band: 'HOUND DOG',
+            anime: 'Naruto',
+            kind: 'opening',
+            coverUrl: 'static/naruto/opening-1.jpg',
+          },
+        ],
+        index: 1,
+        state: 'waiting',
+        songsLength: 5,
+      });
     }
   }, [lastMessage]);
   const navigate = useNavigate();

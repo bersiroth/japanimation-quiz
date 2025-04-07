@@ -11,3 +11,7 @@ build-backend:
 build-run: build-client build-backend
 	@open http://localhost:8080/ &&\
 	cd backend && ./japanimation-quiz
+
+build-container: build-client build-backend
+	@docker build -t japanimation-quiz backend
+
